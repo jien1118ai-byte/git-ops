@@ -1,0 +1,8 @@
+# Git-Ops Requirements
+# Install with: pip install -r requirements.txt
+
+# Configuration file support (YAML)
+PyYAML>=6.0
+
+# Note: All other features work without dependencies
+# Only configuration file (git-ops.yml) requires PyYAML

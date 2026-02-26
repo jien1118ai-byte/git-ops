@@ -1,0 +1,226 @@
+===============================================================================
+                          GIT-OPS 快速入門指南
+                      獨立運行的自然語言 Git 工具
+===============================================================================
+
+設定（只需一次）
+-------------------------------------------------------------------------------
+1. 將以下內容加入 ~/.bashrc 或 ~/.zshrc：
+
+   alias gops='python3 /home/janes/Projects/AI/git-ops/scripts/git_ops.py --from-text'
+
+2. 重新載入 shell：
+
+   source ~/.bashrc
+
+
+基本使用
+-------------------------------------------------------------------------------
+gops "你的自然語言指令" | bash
+
+範例：
+  gops "stash my changes" | bash
+  gops "commit 'fix bug' and push" | bash
+  gops "checkout main" | bash
+
+
+常用指令速查表
+-------------------------------------------------------------------------------
+
+Stash 暫存操作：
+  gops "stash"                         儲存當前更改
+  gops "stash list"                    列出所有暫存
+  gops "stash pop"                     套用並移除最新暫存
+  gops "apply stash 0"                 套用特定暫存
+
+搜尋與資訊：
+  gops "search for 'TODO' in *.py"     搜尋程式碼
+  gops "grep 'pattern' ignore case"    不分大小寫搜尋
+  gops "show reflog"                   查看操作歷史
+  gops "blame file.py"                 查看誰改了什麼
+
+重置與撤銷：
+  gops "undo last commit"              軟重置 HEAD~1
+  gops "unstage all"                   取消暫存所有檔案
+  gops "hard reset to origin/main"     硬重置（警告！）
+
+分支管理：
+  gops "checkout main"                 切換到 main
+  gops "create branch feature/new"     建立新分支
+  gops "delete branch old locally"     刪除本地分支
+
+Commit 與 Push：
+  gops "commit 'message' and push"     提交並推送
+  gops "amend last commit"             修改最後一次 commit
+
+進階操作：
+  gops "cherry-pick abc123"            套用特定 commit
+  gops "merge develop"                 合併分支
+  gops "squash last 3 commits"         互動式 rebase
+  gops "create tag v1.0 and push"      建立並推送標籤
+  gops "clean untracked"               預覽檔案清理
+
+
+中文指令範例
+-------------------------------------------------------------------------------
+  gops "暫存更改" | bash                儲存當前更改
+  gops "暫存列表" | bash                列出暫存
+  gops "顯示日誌" | bash                查看 log
+  gops "作者為 張三" | bash              查找特定作者的 commits
+  gops "切換 main" | bash               切換到 main 分支
+  gops "創建分支 feature/新功能" | bash  建立新分支
+  gops "搜尋 TODO" | bash               搜尋 TODO
+  gops "搜尋 'login' 在 *.js 檔案" | bash  在 JS 檔案中搜尋
+  gops "列出標籤" | bash                列出所有 tags
+  gops "恢復 config.py" | bash          恢復檔案
+  gops "丟棄更改" | bash                丟棄所有更改
+  gops "刪除分支 old-feature" | bash    刪除分支
+
+
+支援的中文關鍵字
+-------------------------------------------------------------------------------
+日誌、作者、切換、分支、恢復、丟棄、搜尋、查找、強制、保留更改、
+包含未追蹤、刪除、列出、顯示、合併、最近、上一個
+
+
+安全提示
+-------------------------------------------------------------------------------
+✓ 執行前預覽：gops "command"（不要加 | bash）
+✓ 破壞性操作需要輸入 "YES" 確認
+✓ 使用 --force-with-lease 而非 --force
+✓ 所有命令都包含安全檢查
+
+
+環境變數
+-------------------------------------------------------------------------------
+REMOTE=upstream gops "push" | bash           使用不同的 remote
+CONFIRM_DESTRUCTIVE=0 gops "reset" | bash    跳過確認（危險！）
+
+
+故障排除
+-------------------------------------------------------------------------------
+問題：找不到命令
+解決：使用完整路徑：python3 /path/to/git-ops/scripts/git_ops.py ...
+
+問題：權限不足
+解決：chmod +r scripts/git_ops.py
+
+問題：不在 git 儲存庫中
+解決：先 cd 到你的 git 儲存庫
+
+
+進階用法
+-------------------------------------------------------------------------------
+
+預覽模式（不執行）：
+  gops "complex operation"              # 只顯示，不執行
+
+儲存為腳本：
+  gops "operation" > script.sh          # 儲存
+  cat script.sh                         # 檢查
+  bash script.sh                        # 執行
+
+建立快捷函數（加入 ~/.bashrc）：
+  gopsrun() {
+      python3 /path/to/git-ops/scripts/git_ops.py --from-text "$*" | bash
+  }
+
+  使用：gopsrun "commit 'fix' and push"
+
+
+實用別名範例
+-------------------------------------------------------------------------------
+加入 ~/.bashrc 或 ~/.zshrc：
+
+  alias gs='gops "stash" | bash'
+  alias gsu='gops "stash pop" | bash'
+  alias gm='gops "checkout main" | bash'
+  alias gpu='gops "pull" | bash'
+  alias gc='function _gc() { gops "commit \"$1\" and push" | bash; }; _gc'
+
+使用：
+  gs                                    # 暫存
+  gsu                                   # 彈出暫存
+  gm                                    # 切換到 main
+  gc "修復 bug"                          # commit 並 push
+
+
+取得協助
+-------------------------------------------------------------------------------
+查看所有操作：
+  python3 scripts/git_ops.py --help
+
+特定操作說明：
+  python3 scripts/git_ops.py stash --help
+  python3 scripts/git_ops.py grep --help
+
+完整文件：
+  README_STANDALONE.md（英文）
+  README_STANDALONE_zh-TW.md（中文）
+
+
+實用場景範例
+-------------------------------------------------------------------------------
+
+場景 1：臨時切換工作
+  gops "stash" | bash
+  gops "checkout hotfix/bug" | bash
+  # ... 修 bug，commit，push
+  gops "checkout -" | bash              # 回到原分支
+  gops "stash pop" | bash
+
+場景 2：整理 commit 歷史
+  gops "squash last 5 commits" | bash
+  # 在編輯器中調整
+
+場景 3：搜尋程式碼
+  gops "search for 'TODO' in *.py" | bash
+  gops "blame src/critical.js" | bash
+
+場景 4：標籤管理
+  gops "create tag v2.0.0 with message '重大更新' and push" | bash
+  gops "list tags" | bash
+
+
+常見問題 FAQ
+-------------------------------------------------------------------------------
+
+Q: Windows 上可以用嗎？
+A: 可以！在 PowerShell 中執行即可。
+
+Q: 會不會覆蓋我的 git 設定？
+A: 不會。git-ops 只生成標準 git 命令，完全遵守你的設定。
+
+Q: 安全嗎？
+A: 是的！有完整的安全檢查和確認提示。
+
+Q: 需要網路嗎？
+A: 不需要！完全離線運行，零 AI 依賴。
+
+Q: 需要付費嗎？
+A: 完全免費！無限次使用，零 token 成本。
+
+
+效能優勢
+-------------------------------------------------------------------------------
+相比請 AI 助手執行：
+  ✓ 速度：即時生成（vs 2-5 秒等待）
+  ✓ 成本：免費（vs 每次 2000-6000 tokens）
+  ✓ 隱私：完全離線（vs 上傳到 AI 服務）
+  ✓ 穩定：不受 API 限制（vs 可能的速率限制）
+
+
+===============================================================================
+                          支援的 17 種操作
+===============================================================================
+Stash（暫存）、Grep（搜尋）、Reset（重置）、Checkout（切換）、
+Restore（恢復）、Clean（清理）、Commit（提交）、Cherry-pick（挑選）、
+Merge（合併）、Revert（還原）、Blame（追蹤）、Reflog（操作記錄）、
+Tag（標籤）、Rebase（變基）、Bisect（二分搜尋）、Log（日誌）、
+Show（顯示）、Diff（差異）、Push（推送）
+
+===============================================================================
+
+提示：建議先用預覽模式（不加 | bash）確認命令正確，再實際執行！
+
+===============================================================================

@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-01-30T10:33:01.045717",
+  "priorities": {
+    "stash": {
+      "count": 7,
+      "percentage": 35.0,
+      "rank": 1
+    },
+    "commit": {
+      "count": 5,
+      "percentage": 25.0,
+      "rank": 2
+    },
+    "grep": {
+      "count": 5,
+      "percentage": 25.0,
+      "rank": 3
+    },
+    "checkout": {
+      "count": 3,
+      "percentage": 15.0,
+      "rank": 4
+    }
+  },
+  "recommendations": {
+    "stash": "high_priority",
+    "commit": "high_priority",
+    "grep": "high_priority",
+    "checkout": "medium_priority"
+  }
+}

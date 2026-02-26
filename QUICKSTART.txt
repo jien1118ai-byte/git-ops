@@ -1,0 +1,119 @@
+===============================================================================
+                        GIT-OPS QUICK START GUIDE
+                   Natural Language Git Tool (Standalone)
+===============================================================================
+
+SETUP (One-time)
+-------------------------------------------------------------------------------
+1. Add to ~/.bashrc or ~/.zshrc:
+
+   alias gops='python3 /home/janes/Projects/AI/git-ops/scripts/git_ops.py --from-text'
+
+2. Reload shell:
+
+   source ~/.bashrc
+
+
+BASIC USAGE
+-------------------------------------------------------------------------------
+gops "your natural language command" | bash
+
+Examples:
+  gops "stash my changes" | bash
+  gops "commit 'fix bug' and push" | bash
+  gops "checkout main" | bash
+
+
+COMMON COMMANDS CHEATSHEET
+-------------------------------------------------------------------------------
+
+Stash Operations:
+  gops "stash"                         Save current changes
+  gops "stash list"                    List all stashes
+  gops "stash pop"                     Apply and remove latest stash
+  gops "apply stash 0"                 Apply specific stash
+
+Search & Info:
+  gops "search for 'TODO' in *.py"     Search code
+  gops "grep 'pattern' ignore case"    Case-insensitive search
+  gops "show reflog"                   View operation history
+  gops "blame file.py"                 See who changed what
+
+Reset & Undo:
+  gops "undo last commit"              Soft reset HEAD~1
+  gops "unstage all"                   Unstage all files
+  gops "hard reset to origin/main"     Hard reset (WARNING!)
+
+Branch Management:
+  gops "checkout main"                 Switch to main
+  gops "create branch feature/new"     Create new branch
+  gops "delete branch old locally"     Delete local branch
+
+Commit & Push:
+  gops "commit 'message' and push"     Commit and push
+  gops "amend last commit"             Modify last commit
+
+Advanced:
+  gops "cherry-pick abc123"            Apply specific commit
+  gops "merge develop"                 Merge branch
+  gops "squash last 3 commits"         Interactive rebase
+  gops "create tag v1.0 and push"      Create and push tag
+  gops "clean untracked"               Preview file cleanup
+
+
+CHINESE COMMANDS (中文指令)
+-------------------------------------------------------------------------------
+  gops "暫存更改" | bash
+  gops "顯示日誌" | bash
+  gops "切換 main" | bash
+  gops "搜尋 TODO" | bash
+  gops "列出標籤" | bash
+
+
+SAFETY TIPS
+-------------------------------------------------------------------------------
+✓ Preview before execute: gops "command" (without | bash)
+✓ Destructive operations require typing "YES" to confirm
+✓ Uses --force-with-lease instead of --force
+✓ All commands include safety checks
+
+
+ENVIRONMENT VARIABLES
+-------------------------------------------------------------------------------
+REMOTE=upstream gops "push" | bash           Use different remote
+CONFIRM_DESTRUCTIVE=0 gops "reset" | bash    Skip confirmations (risky!)
+
+
+TROUBLESHOOTING
+-------------------------------------------------------------------------------
+Problem: Command not found
+Fix:     Use full path: python3 /path/to/git-ops/scripts/git_ops.py ...
+
+Problem: Permission denied
+Fix:     chmod +r scripts/git_ops.py
+
+Problem: Not in git repo
+Fix:     cd to your git repository first
+
+
+HELP
+-------------------------------------------------------------------------------
+View all operations:
+  python3 scripts/git_ops.py --help
+
+Operation-specific help:
+  python3 scripts/git_ops.py stash --help
+  python3 scripts/git_ops.py grep --help
+
+Full documentation:
+  See README_STANDALONE.md (English)
+  See README_STANDALONE_zh-TW.md (中文)
+
+
+===============================================================================
+                        17 SUPPORTED OPERATIONS
+===============================================================================
+Stash, Grep, Reset, Checkout, Restore, Clean, Commit, Cherry-pick, Merge,
+Revert, Blame, Reflog, Tag, Rebase, Bisect, Log, Show, Diff, Push
+
+===============================================================================

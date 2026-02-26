@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.claude/
+git-ops.yml
+taketask.log
+works.txt

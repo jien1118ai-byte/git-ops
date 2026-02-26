@@ -1,0 +1,363 @@
+# Git-Ops Configuration Example
+# Copy this file to one of these locations:
+#   - ./git-ops.yml (current directory)
+#   - ./.git-ops.yml (current directory, hidden)
+#   - ~/.git-ops.yml (home directory)
+#   - ~/.config/git-ops/config.yml (XDG config)
+#
+# Or specify with: gops "command" --config /path/to/config.yml
+
+# ============================================================================
+# Git Default Settings
+# ============================================================================
+git:
+  remote: origin          # Default remote repository name
+  sync_mode: rebase       # Sync strategy: rebase|merge|none
+  push_mode: push         # Push behavior: push|nopush|lease
+  branch: null            # Default branch (null = use current)
+
+# ============================================================================
+# Commit Message Settings
+# ============================================================================
+# Control auto-generated commit body content
+# When enabled, commit messages include a "Modified Files" section with diff stats
+# For fix/bug commits, an interactive "Root Cause" prompt is shown
+commit:
+  auto_log: true              # Auto-include modified files in commit body
+  log_format: stat            # File change format: stat
+
+# ============================================================================
+# Safety & Confirmation Settings
+# ============================================================================
+safety:
+  confirm_destructive: true      # Require "YES" for dangerous operations
+  confirm_hard_reset: true       # Confirm before hard reset
+  confirm_force_push: true       # Confirm before force push
+  confirm_branch_delete: true    # Confirm before deleting branches
+
+# ============================================================================
+# Preflight Check Settings
+# ============================================================================
+# Control what gets checked when running: gops "preflight check"
+preflight:
+  check_branch: true               # Show current branch info
+  check_detached_head: true        # Warn if in detached HEAD state
+  check_uncommitted: true          # Check for staged/unstaged changes
+  check_untracked: true            # Check for untracked files
+  check_stashes: true              # Show stash count
+  check_remote_status: true        # Compare local/remote (requires fetch)
+  check_conflicts: true            # Detect unresolved merge conflicts
+  fetch_before_check: true         # Auto-fetch remote before status check
+  show_recommendations: true       # Show suggested next steps
+
+# ============================================================================
+# Conflict Detection Settings
+# ============================================================================
+# Control conflict detection: gops "detect conflicts with develop"
+conflict_detection:
+  fetch_before_detect: true        # Fetch remote before detecting conflicts
+  default_target_branch: main      # Default branch to check against
+  show_file_details: true          # Show per-file conflict details
+  show_resolution_guide: true      # Show resolution options and commands
+  cleanup_on_error: true           # Always clean up temp branches on error
+
+# ============================================================================
+# Decision Engine Settings
+# ============================================================================
+# Control workflow recommendations: gops "what should I do"
+decision_engine:
+  default_target_branch: main      # Default branch for comparison
+  fetch_before_analyze: true       # Fetch remote before analysis
+  show_situation: true             # Show current situation summary
+  show_risks: true                 # Show risk warnings
+  show_next_command: true          # Suggest next gops command
+
+# ============================================================================
+# Stash Management Settings
+# ============================================================================
+# Control advanced stash operations:
+#   gops "stash list detailed"     - Detailed listing with age & stats
+#   gops "stash backup 0"          - Export stash to .patch file
+#   gops "stash apply safe 0"      - Apply with conflict pre-check
+stash_management:
+  backup_dir: ~/.git-ops/backups     # Directory for stash backup patch files
+  age_warning_hours: 24              # Warn if stash is older than this (hours)
+  age_danger_hours: 168              # Mark as dangerous if older (7 days)
+  show_file_stats: true              # Show file change stats in detailed list
+  show_age: true                     # Show stash age in detailed list
+
+# ============================================================================
+# Branch Management Settings
+# ============================================================================
+# Analyze, clean up, and manage branches:
+#   gops "analyze branches"          - Full branch analysis report
+#   gops "cleanup branches"          - Interactive cleanup (stale + merged)
+#   gops "delete merged branches"    - Delete all merged branches
+#   gops branch analyze              - CLI: analyze
+#   gops branch cleanup              - CLI: cleanup
+#   gops branch delete-merged        - CLI: delete merged
+branch_management:
+  default_base_branch: main            # Base branch for merge status checks
+  stale_days: 30                       # Branches idle for N+ days are "stale"
+  merged_grace_days: 7                 # Keep recently merged branches for N days
+  show_remote_branches: true           # Show remote-only branches in analysis
+  protected_branches:                  # These branches are NEVER deleted
+    - main
+    - master
+    - develop
+    - staging
+  fetch_before_analyze: true           # Fetch & prune remote before analysis
+
+# ============================================================================
+# Team Rules Validation
+# ============================================================================
+# Validate commit messages, branch names, and quality checks
+# Usage: gops "validate commit message 'feat: new login'"
+#        gops "validate branch"
+#        gops "validate rules"
+team_rules:
+  # Commit message format enforcement
+  commit_format:
+    style: conventional            # conventional|custom
+    # Regex pattern for valid commit messages (bash extended regex)
+    pattern: '^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+?\))?!?: .+'
+    max_length: 72                 # Maximum length of commit message
+    examples:                      # Shown when validation fails
+      - 'feat(auth): implement JWT login'
+      - 'fix(api): handle timeout'
+      - 'docs: update README'
+      - 'refactor!: drop legacy support'
+
+  # Branch naming convention enforcement
+  branch_naming:
+    enabled: true                  # Enable/disable branch name validation
+    # Regex pattern for valid branch names (bash extended regex)
+    pattern: '^(feature|fix|hotfix|release|chore)/[a-z0-9._-]+$'
+    exempt:                        # Branches exempt from naming rules
+      - main
+      - master
+      - develop
+      - staging
+    examples:                      # Shown when validation fails
+      - 'feature/user-auth'
+      - 'fix/memory-leak'
+      - 'hotfix/critical-bug'
+      - 'release/v1.2.0'
+
+  # Quality gate checks (run before PR/merge)
+  quality_checks: []               # Empty by default
+  # Uncomment and customize for your project:
+  # quality_checks:
+  #   - name: lint
+  #     command: npm run lint
+  #     required: true             # Fail validation if check fails
+  #   - name: unit tests
+  #     command: npm test
+  #     required: true
+  #   - name: type check
+  #     command: npx tsc --noEmit
+  #     required: false            # Warning only, won't fail validation
+
+# ============================================================================
+# Workflow Templates
+# ============================================================================
+# Multi-step workflow automation. Run with: gops "workflow <name>"
+# List available:  gops "workflow list"
+# With parameters: gops "workflow create-feature user-auth"
+#                  gops "workflow run create-feature --param name=user-auth"
+workflows:
+  stop_on_error: true              # Prompt to continue/abort when a step fails
+  show_step_numbers: true          # Show [1/N] step numbering
+  verbose: false                   # Show extra debug output per step
+
+  # Built-in workflows:
+  #   create_feature  - Create feature branch from up-to-date develop
+  #   commit_and_push - Stage, validate, commit, sync, and push
+  #   ready_for_pr    - Validate, test, lint, build, PR description + checklist
+
+  # Override steps in built-in workflows
+  overrides: {}
+  # overrides:
+  #   ready_for_pr:                  # Replace the default steps entirely
+  #     steps:
+  #       - action: run_command
+  #         command: pytest
+  #         required: true
+  #         label: Run pytest
+  #       - action: run_command
+  #         command: ruff check .
+  #         required: true
+  #         label: Run ruff linter
+  #       - action: generate_pr_description
+  #         label: Generate PR description
+  #       - action: show_checklist
+  #         items:
+  #           - All tests pass
+  #           - Linter has no errors
+  #           - Documentation is updated
+  #         label: PR checklist
+
+  # Define custom workflows
+  definitions: {}
+  # definitions:
+  #   deploy:
+  #     description: Deploy to production
+  #     params:
+  #       - name: tag
+  #         required: true
+  #         prompt: Release tag
+  #     steps:
+  #       - action: checkout
+  #         branch: main
+  #         pull: true
+  #         label: Switch to main and pull
+  #       - action: run_command
+  #         command: npm test
+  #         required: true
+  #         label: Run tests
+  #       - action: run_command
+  #         command: npm run build
+  #         required: true
+  #         label: Build
+  #       - action: run_command
+  #         command: git tag {tag}
+  #         required: true
+  #         label: Create release tag
+  #
+  #   hotfix:
+  #     description: Create and prepare a hotfix branch
+  #     params:
+  #       - name: name
+  #         required: true
+  #         prompt: Hotfix name
+  #     steps:
+  #       - action: checkout
+  #         branch: main
+  #         pull: true
+  #         label: Switch to main
+  #       - action: create_branch
+  #         branch: hotfix/{name}
+  #         label: Create hotfix branch
+
+# ============================================================================
+# Usage Logging
+# ============================================================================
+logging:
+  enabled: true                  # Enable usage tracking
+  log_file: ~/.git-ops/usage.jsonl
+  log_errors: true               # Also log failed operations
+
+# ============================================================================
+# Custom Aliases (Shortcuts)
+# ============================================================================
+# Define short aliases for common operations
+# Usage: gops "s" → gops "stash"
+aliases:
+  # Stash shortcuts
+  s: stash
+  sp: stash pop
+  sa: stash apply
+  sl: stash list
+  sd: stash drop
+
+  # Branch shortcuts
+  cm: checkout main
+  cd: checkout develop
+  cb: checkout -
+
+  # Commit shortcuts
+  c: commit
+  ca: commit --amend
+  cap: commit and push
+  cp: commit and push
+
+  # Search shortcuts
+  grep: search for
+  find: search for
+
+  # Other shortcuts
+  unstage: reset HEAD
+  undo: reset --soft HEAD~1
+
+# ============================================================================
+# Custom Patterns (Natural Language Extensions)
+# ============================================================================
+# Define custom natural language patterns
+# These are checked before standard parsing
+custom_patterns:
+  # Work-in-progress shortcuts
+  save: stash with message 'WIP'
+  save work: stash with message 'work in progress'
+  quick save: stash
+
+  # Quick commits
+  quick commit: commit 'wip' and push
+  qc: commit 'wip'
+
+  # Sync workflows
+  sync: pull with rebase
+  sync main: checkout main, pull, checkout -
+  update: pull with rebase
+
+  # Cleanup workflows
+  clean up: stash, checkout main, pull
+  fresh start: stash, checkout main, pull, checkout -b
+
+# ============================================================================
+# Operation Priorities
+# ============================================================================
+# Auto-populated by pattern_analyzer.py
+# You can also manually adjust priorities here
+priorities:
+  # Example (usually auto-generated):
+  # stash: high_priority
+  # commit: high_priority
+  # checkout: medium_priority
+  # grep: normal
+
+# ============================================================================
+# Behavior Customization
+# ============================================================================
+behavior:
+  auto_fetch: true              # Automatically fetch before operations
+  use_force_with_lease: true    # Use --force-with-lease instead of --force
+  interactive_mode: false       # Interactive mode for ambiguous commands
+  verbose: false                # Show verbose output
+
+# ============================================================================
+# Personal Preferences (Examples)
+# ============================================================================
+
+# Example 1: Always use merge instead of rebase
+# git:
+#   sync_mode: merge
+
+# Example 2: Disable all confirmations (DANGEROUS!)
+# safety:
+#   confirm_destructive: false
+#   confirm_hard_reset: false
+#   confirm_force_push: false
+#   confirm_branch_delete: false
+
+# Example 3: Create a complete workflow alias
+# aliases:
+#   deploy: checkout main, pull, merge develop, push, checkout develop
+
+# Example 4: Team-specific shortcuts
+# aliases:
+#   pr: checkout -b
+#   review: checkout
+#   done: merge main, push, delete branch
+
+# ============================================================================
+# Notes
+# ============================================================================
+# - Aliases are checked first, before custom patterns
+# - Custom patterns support partial matching
+# - Configuration is loaded in this order:
+#   1. Default config (built-in)
+#   2. Config file (this file)
+#   3. Command-line arguments (override everything)
+# - Use quotes for multi-word patterns
+# - Boolean values: true|false
+# - Null values: null or ~

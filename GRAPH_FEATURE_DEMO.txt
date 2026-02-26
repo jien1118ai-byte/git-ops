@@ -1,0 +1,248 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║              Git Commit Graph Visualization - 功能展示                   ║
+║                         ✅ NEW FEATURE                                   ║
+║                                                                          ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+## 功能說明 / Feature Description
+
+現在 git-ops 支援像 QGit 一樣的 ASCII 關係圖顯示！
+Now git-ops supports QGit-style ASCII commit graph visualization!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 使用範例 / Usage Examples
+
+### 1. 基本圖形 / Basic Graph
+
+輸入 / Input:
+  gops "log graph" | bash
+  gops "show commit tree" | bash
+  gops "日誌 圖形" | bash
+
+生成指令 / Generated Command:
+  git log --graph --oneline --decorate --color -n 20
+
+輸出範例 / Output Example:
+  * 2f8a3b1 (HEAD -> main) Add graph visualization support
+  *   1a2b3c4 Merge branch 'feature/config'
+  |\
+  | * 4d5e6f7 (feature/config) Add config file support
+  | * 8g9h0i1 Update config manager
+  |/
+  * 2j3k4l5 Add usage tracking
+  * 3k4l5m6 Initial commit
+
+───────────────────────────────────────────────────────────────────────────
+
+### 2. 所有分支的圖形 / All Branches Graph
+
+輸入 / Input:
+  gops "log graph all" | bash
+  gops "show graph for all branches" | bash
+  gops "視覺化所有分支" | bash
+
+生成指令 / Generated Command:
+  git log --graph --oneline --decorate --color -n 20 --all
+
+輸出範例 / Output Example:
+  * 2f8a3b1 (HEAD -> main, origin/main) Add graph feature
+  | * 9a8b7c6 (feature/new) Work in progress
+  |/
+  *   1a2b3c4 Merge branch 'feature/config'
+  |\
+  | * 4d5e6f7 (origin/feature/config) Add config support
+  | * 8g9h0i1 Update config manager
+  |/
+  * 2j3k4l5 Add usage tracking
+  | * 5m6n7o8 (develop) Development work
+  |/
+  * 3k4l5m6 Initial commit
+
+───────────────────────────────────────────────────────────────────────────
+
+### 3. 限制數量 / Limited Count
+
+輸入 / Input:
+  gops "show last 5 commits as graph" | bash
+  gops "顯示最近 10 個提交的圖形" | bash
+
+生成指令 / Generated Command:
+  git log --graph --oneline --decorate --color -n 5
+  git log --graph --oneline --decorate --color -n 10
+
+───────────────────────────────────────────────────────────────────────────
+
+### 4. 組合功能 / Combined Features
+
+輸入 / Input:
+  gops "show last 30 commits as graph for all branches" | bash
+
+生成指令 / Generated Command:
+  git log --graph --oneline --decorate --color -n 30 --all
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 觸發關鍵字 / Trigger Keywords
+
+### Graph Visualization (圖形化):
+  ✓ graph
+  ✓ tree
+  ✓ visual / visualize
+  ✓ 圖形
+  ✓ 視覺化
+  ✓ 關係圖
+
+### All Branches (所有分支):
+  ✓ all
+  ✓ all branches
+  ✓ 所有
+  ✓ 所有分支
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 配置檔整合 / Configuration Integration
+
+在 ~/.git-ops.yml 中創建別名：
+
+aliases:
+  g: log graph all
+  tree: log graph all
+  graph: log graph
+
+custom_patterns:
+  commit tree: log graph all branches
+  show history: log graph all
+
+使用 / Usage:
+  gops "g" | bash           # 快速顯示圖形
+  gops "tree" | bash        # 樹狀圖
+  gops "commit tree" | bash # 自訂模式
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 實際應用場景 / Practical Use Cases
+
+### 場景 1：檢查合併結構
+  問題：我想看看 feature 分支是否正確合併到 main
+  指令：gops "log graph all" | bash
+  結果：視覺化顯示合併點和分支結構
+
+### 場景 2：找出分支分叉點
+  問題：develop 和 main 何時分開的？
+  指令：gops "show last 50 commits as graph all" | bash
+  結果：清楚看到分支歷史
+
+### 場景 3：檢查未合併的分支
+  問題：有沒有孤立的分支？
+  指令：gops "log graph all branches" | bash
+  結果：顯示所有分支的關係
+
+### 場景 4：理解複雜歷史
+  問題：這個專案的提交歷史太複雜
+  指令：gops "show commit tree" | bash
+  結果：用圖形方式理解結構
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 圖形符號說明 / Graph Symbols
+
+Symbol   Meaning             說明
+───────────────────────────────────────────
+  *      Commit              提交點
+  |      Branch line         分支線
+  /      Merge point         合併點
+  \      Branch point        分支點
+  |\     Fork                分叉
+  |/     Join                匯合
+
+範例解讀 / Example Interpretation:
+
+  *   Commit A ← 合併提交 (Merge commit)
+  |\           ← 這裡分成兩條線 (Fork into two lines)
+  | * Commit B ← feature 分支的提交 (Commit on feature branch)
+  * | Commit C ← main 分支的提交 (Commit on main branch)
+  |/           ← 兩條線匯合 (Lines merge)
+  * Commit D   ← 共同祖先 (Common ancestor)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 與 QGit 的比較 / Comparison with QGit
+
+Feature                git-ops           QGit
+───────────────────────────────────────────────────────
+Display Type           ASCII (CLI)       Visual (GUI)
+Speed                  Instant           Needs to load
+Dependencies           None              Qt libraries
+Remote Access          ✓ Works via SSH   ✗ Needs X11
+Automation             ✓ Scriptable      ✗ GUI only
+Customization          ✓ Configurable    Limited
+Learning Curve         Low               Medium
+Cross-platform         ✓ All platforms   Linux/Windows
+
+結論 / Conclusion:
+  - QGit: 更漂亮的圖形界面 (More beautiful GUI)
+  - git-ops: 更快速、可腳本化 (Faster, scriptable)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 技術實作 / Technical Implementation
+
+新增的 Plan 字段:
+  - log_graph: bool = False
+  - log_all_branches: bool = False
+
+解析邏輯:
+  檢測關鍵字 → 設定 log_graph 和 log_all_branches → 生成對應參數
+
+生成的指令參數:
+  --graph           顯示 ASCII 圖形
+  --oneline         簡潔一行顯示
+  --decorate        顯示分支/標籤名稱
+  --color           彩色輸出
+  --all             顯示所有分支 (可選)
+  -n <count>        限制顯示數量
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 快速參考 / Quick Reference
+
+英文指令 / English Commands:
+  ✓ gops "log graph" | bash
+  ✓ gops "show commit tree" | bash
+  ✓ gops "visual log all" | bash
+  ✓ gops "show last 10 as graph" | bash
+
+中文指令 / Chinese Commands:
+  ✓ gops "日誌 圖形" | bash
+  ✓ gops "視覺化提交" | bash
+  ✓ gops "顯示所有分支的關係圖" | bash
+  ✓ gops "顯示最近 10 個提交的圖形" | bash
+
+配置別名 / Config Aliases:
+  aliases:
+    g: log graph all
+
+便捷 Shell 別名 / Shell Aliases:
+  alias gitgraph='gops "log graph all" | bash'
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+## 文檔資源 / Documentation
+
+  📖 GRAPH_VISUALIZATION_GUIDE.md  完整指南 (Comprehensive guide)
+  📖 SKILL.md                       功能文檔 (Feature documentation)
+  📖 CONFIG_GUIDE.md                配置說明 (Configuration guide)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Feature Status: IMPLEMENTED & TESTED
+✅ 功能狀態：已實作並測試
+
+Enjoy visualizing your Git history! 🌳
+享受視覺化的 Git 歷史！🌳
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+*Feature added: 2026-01-30*
