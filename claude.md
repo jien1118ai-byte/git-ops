@@ -95,8 +95,6 @@ git-ops/
 ├── SKILL.md                    # Complete skill documentation
 ├── CONFIG_GUIDE.md             # Configuration guide
 ├── USAGE_TRACKING_GUIDE.md     # Usage tracking guide
-├── README_STANDALONE.md        # Standalone usage guide (EN)
-├── README_STANDALONE_zh-TW.md  # Standalone usage guide (ZH)
 └── test_*.sh                   # Test scripts
 ```
 
@@ -279,10 +277,7 @@ If git-ops returns an error:
 - **SKILL.md** - Complete feature reference
 - **CONFIG_GUIDE.md** - Configuration system guide
 - **USAGE_TRACKING_GUIDE.md** - Usage tracking & optimization
-- **README_STANDALONE.md** - Standalone usage guide (English)
-- **README_STANDALONE_zh-TW.md** - Standalone usage guide (Chinese)
 - **QUICKSTART.txt** - Quick reference card
-- **DOCUMENTATION_INDEX.md** - Documentation navigation
 
 ---
 

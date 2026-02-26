@@ -268,8 +268,6 @@ python3 scripts/pattern_analyzer.py --suggest-aliases
 
 ### 安裝指南
 - **INSTALLATION_MODES.md** ⭐ - 安裝模式說明
-- **INSTALLATION_GUIDE.md** - 完整安裝指南
-- **INSTALLATION_QUICK_REFERENCE.txt** - 安裝速查
 
 ### 功能說明
 - **SKILL.md** - 完整功能參考
@@ -277,15 +275,10 @@ python3 scripts/pattern_analyzer.py --suggest-aliases
 - **GRAPH_VISUALIZATION_GUIDE.md** - 圖形化指南
 - **USAGE_TRACKING_GUIDE.md** - 使用追蹤指南
 
-### 獨立使用
-- **README_STANDALONE.md** - 獨立使用指南（英文）
-- **README_STANDALONE_zh-TW.md** - 獨立使用指南（中文）
-
-### 技術文檔
-- **CONFIG_IMPLEMENTATION_SUMMARY.md** - 配置系統實作
-- **FINAL_STATUS_REPORT.md** - 專案狀態報告
-
-**導航**：參見 `DOCUMENTATION_INDEX.md`
+### 其他
+- **ERROR_HANDLING_QUICK_REF.md** - 錯誤碼速查
+- **PASSWORD_INPUT_LIMITATION.md** - SSH 密碼限制說明
+- **TROUBLESHOOTING.md** - 問題排解
 
 ---
 
@@ -390,7 +383,7 @@ pip install -r requirements.txt
 ## 📞 獲取幫助
 
 - 🐛 **問題回報**：建議開 issue
-- 📖 **查看文檔**：`cat DOCUMENTATION_INDEX.md`
+- 📖 **查看文檔**：`cat SKILL.md`
 - ⚡ **快速參考**：`cat QUICKSTART.txt`
 - 💬 **使用範例**：`cat SKILL.md`
 

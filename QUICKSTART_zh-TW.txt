@@ -155,8 +155,8 @@ CONFIRM_DESTRUCTIVE=0 gops "reset" | bash    跳過確認（危險！）
   python3 scripts/git_ops.py grep --help
 
 完整文件：
-  README_STANDALONE.md（英文）
-  README_STANDALONE_zh-TW.md（中文）
+  README.md
+  SKILL.md
 
 
 實用場景範例

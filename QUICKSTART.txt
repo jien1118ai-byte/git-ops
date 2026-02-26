@@ -106,8 +106,8 @@ Operation-specific help:
   python3 scripts/git_ops.py grep --help
 
 Full documentation:
-  See README_STANDALONE.md (English)
-  See README_STANDALONE_zh-TW.md (中文)
+  See README.md
+  See SKILL.md
 
 
 ===============================================================================
