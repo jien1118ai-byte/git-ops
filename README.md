@@ -58,6 +58,7 @@ gops "stash my changes" | bash
 - 📈 **自動學習** - 追蹤使用、建議優化
 - 🔒 **安全第一** - 預檢檢查、確認提示
 - 💰 **零成本** - 獨立運作，無 API 調用
+- 🤖 **LLM Fallback** - Regex 無法匹配時，可選用本地 Ollama 分類意圖
 - 🚀 **內建執行器** - `-x` 直接執行，不再需要 `| bash`
 - 🧠 **智能決策引擎** - 自動分析狀態、推薦最佳操作
 - 🌳 **分支管理** - 分析、清理過期與已合併分支
@@ -404,6 +405,10 @@ custom_patterns:
 ### 可選（配置檔功能）
 - PyYAML >= 6.0
 
+### 可選（LLM Fallback）
+- [Ollama](https://ollama.com) + `ollama pull qwen2.5:3b`
+- 啟用：在 `~/.git-ops.yml` 加入 `llm_fallback: { enabled: true }`
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -461,5 +466,5 @@ MIT License - 隨意使用！
 
 ---
 
-*Last Updated: 2026-02-26*
-*Version: 2.0.0 - Built-in Executor + Smart Features*
+*Last Updated: 2026-02-27*
+*Version: 2.1.0 - LLM Fallback + Built-in Executor + Smart Features*

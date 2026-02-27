@@ -1,6 +1,6 @@
 ---
 name: git-ops
-description: Generate safe, paste-ready Git command sequences for all common Git operations via natural language. Supports commit, push, stash, branch management, search, reset, revert, cherry-pick, merge, and more.
+description: Generate safe, paste-ready Git command sequences for all common Git operations via natural language. Supports commit, push, stash, branch management, search, reset, revert, cherry-pick, merge, preflight checks, conflict detection, smart recommendations, team rules validation, workflow templates, and more.
 allowed-tools:
   - Bash
 ---
@@ -33,7 +33,29 @@ python3 scripts/git_ops.py --from-text "search for 'TODO' in *.py files"
 
 Or use structured subcommands for more control (see below).
 
-## Supported Operations
+## Execution Modes
+
+### Print mode (default)
+```bash
+python3 scripts/git_ops.py --from-text "stash"
+# Outputs bash script to stdout — pipe to bash or copy-paste
+```
+
+### Execute mode
+```bash
+python3 scripts/git_ops.py --from-text "stash" -x       # Preview + [Y/n] confirm
+python3 scripts/git_ops.py --from-text "stash" -x -y    # Skip confirmation
+python3 scripts/git_ops.py --from-text "stash" --print   # Force print (override config)
+```
+
+### Using the `gops` alias
+```bash
+gops "stash" -x            # Execute with confirmation
+gops "stash" -x -y         # Execute without confirmation
+gops "stash" | bash         # Traditional pipe mode
+```
+
+## Supported Operations (24)
 
 ### 1. Commit & Push
 **Natural language:**
@@ -284,6 +306,103 @@ python3 scripts/git_ops.py push
 python3 scripts/git_ops.py push --force
 ```
 
+### 18. Preflight Check (Repository Health)
+**Natural language:**
+- "preflight check"
+- "health check"
+- "repo check"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py preflight
+```
+
+### 19. Conflict Detection
+**Natural language:**
+- "detect conflicts with main"
+- "check for conflicts against develop"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py conflict-detect --target main
+```
+
+### 20. Conflict Resolution Guide
+**Natural language:**
+- "resolve conflicts"
+- "conflict status"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py conflict-resolve
+python3 scripts/git_ops.py conflict-resolve --file src/app.py
+```
+
+### 21. Smart Recommendations (Decision Engine)
+**Natural language:**
+- "what should I do"
+- "recommend next step"
+- "建議我下一步做什麼"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py decide
+python3 scripts/git_ops.py decide --goal "prepare for merge"
+```
+
+### 22. Team Rules Validation
+**Natural language:**
+- "validate commit message 'feat: add login'"
+- "validate branch name"
+- "validate all rules"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py validate commit -m "feat: add login"
+python3 scripts/git_ops.py validate branch
+python3 scripts/git_ops.py validate quality
+python3 scripts/git_ops.py validate rules
+```
+
+### 23. Workflow Templates
+**Natural language:**
+- "workflow list"
+- "workflow commit-and-push"
+- "workflow create-feature user-auth"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py workflow list
+python3 scripts/git_ops.py workflow run commit_and_push
+python3 scripts/git_ops.py workflow run create_feature --param name=user-auth
+```
+
+### 24. Branch Management & Cleanup
+**Natural language:**
+- "analyze branches"
+- "cleanup branches"
+- "delete merged branches"
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py branch analyze
+python3 scripts/git_ops.py branch cleanup
+python3 scripts/git_ops.py branch delete-merged
+```
+
+### Advanced Stash Operations
+**Natural language:**
+- "stash list detailed" — detailed listing with age & file stats
+- "stash backup 0" — export stash to .patch file
+- "stash apply safe 0" — apply with conflict pre-check
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py stash list-detailed
+python3 scripts/git_ops.py stash backup 0
+python3 scripts/git_ops.py stash apply-safe 0
+```
+
 ## Safety Features
 
 The generated bash scripts **always**:
@@ -300,7 +419,7 @@ The generated bash scripts **always**:
 
 ## Output Format
 
-All commands output paste-ready bash code blocks:
+**Print mode** (default): outputs paste-ready bash code blocks:
 
 ````
 ```bash
@@ -310,7 +429,37 @@ set -euo pipefail
 ```
 ````
 
-You can copy and paste directly into your terminal.
+**Execute mode** (`-x`): runs the script directly with optional confirmation.
+
+## LLM Fallback (Optional)
+
+When the regex parser can't match your input, git-ops can optionally call a local Ollama LLM to classify intent. This is **disabled by default** and requires no extra Python dependencies.
+
+**Setup:**
+```bash
+# 1. Install Ollama: https://ollama.com
+# 2. Pull a model
+ollama pull qwen2.5:3b
+
+# 3. Enable in config
+echo "llm_fallback:
+  enabled: true" >> ~/.git-ops.yml
+```
+
+**How it works:**
+- Regex patterns are always tried first (instant, zero overhead)
+- Only when all regex patterns fail AND `llm_fallback.enabled: true`, the LLM is called
+- The LLM returns a JSON intent (op + params), validated against a strict whitelist
+- If LLM fails or is unavailable, falls back to `git status` silently
+
+**Config options:**
+```yaml
+llm_fallback:
+  enabled: true                    # Enable/disable (default: false)
+  model: qwen2.5:3b               # Ollama model name
+  base_url: http://localhost:11434 # Ollama API endpoint
+  timeout: 2                       # Max seconds to wait
+```
 
 ## Environment Variables (Optional)
 
@@ -346,19 +495,19 @@ python3 scripts/git_ops.py --from-text "create tag v2.0.0 with message 'Major re
 ## Supported Languages
 
 The NLP parser supports both **English** and **Chinese (繁體中文)** keywords:
-- 日誌 (log)
-- 作者 (author)
-- 切換 (switch)
-- 分支 (branch)
-- 恢復 (restore)
-- 丟棄 (discard)
+- 日誌 (log), 作者 (author)
+- 切換 (switch), 分支 (branch)
+- 恢復 (restore), 丟棄 (discard)
 - 搜尋/查找 (search/find)
-- 強制 (hard)
-- 保留更改 (soft)
+- 強制 (hard), 保留更改 (soft)
 - 包含未追蹤 (include untracked)
-- 刪除 (delete)
-- 列出 (list)
-- 顯示 (show)
+- 刪除 (delete), 列出 (list), 顯示 (show)
+- 預檢 (preflight), 衝突 (conflict)
+- 建議/推薦 (recommend), 驗證 (validate)
+- 工作流/流程 (workflow), 分析 (analyze), 清理 (cleanup)
+- 暫存 (stash), 安全套用暫存 (safe apply stash)
+
+When LLM fallback is enabled, free-form Chinese input like "把修改存起來" or "送出修改到遠端" can also be understood.
 
 ## Error Handling & Diagnostics
 

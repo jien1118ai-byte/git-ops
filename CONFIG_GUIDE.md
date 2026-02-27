@@ -46,10 +46,10 @@ vim ~/.git-ops.yml
 
 ```bash
 # 自動載入（從標準位置）
-gops "stash" | bash
+gops "stash" -x
 
 # 指定配置檔
-gops "stash" --config /path/to/config.yml | bash
+gops "stash" --config /path/to/config.yml -x
 ```
 
 ---
@@ -136,16 +136,16 @@ aliases:
 **使用方式**：
 ```bash
 # 原本
-gops "stash" | bash
+gops "stash"  -x
 
 # 使用別名後
-gops "s" | bash
+gops "s"  -x
 
 # 原本
-gops "checkout main" | bash
+gops "checkout main"  -x
 
 # 使用別名後
-gops "cm" | bash
+gops "cm"  -x
 ```
 
 **實用別名範例**：
@@ -191,11 +191,11 @@ custom_patterns:
 **使用方式**：
 ```bash
 # 使用自訂模式
-gops "save" | bash
-# 實際執行：gops "stash with message 'WIP'" | bash
+gops "save"  -x
+# 實際執行：gops "stash with message 'WIP'"  -x
 
-gops "quick commit" | bash
-# 實際執行：gops "commit 'wip' and push" | bash
+gops "quick commit"  -x
+# 實際執行：gops "commit 'wip' and push"  -x
 ```
 
 **進階範例 - 工作流程**：
@@ -253,6 +253,138 @@ behavior:
 
 ---
 
+### 預檢設定（Preflight）
+
+```yaml
+preflight:
+  check_branch: true               # 顯示當前分支
+  check_detached_head: true        # 偵測 detached HEAD
+  check_uncommitted: true          # 檢查未提交變更
+  check_untracked: true            # 檢查未追蹤檔案
+  check_stashes: true              # 顯示 stash 數量
+  check_remote_status: true        # 比較本地/遠端
+  check_conflicts: true            # 偵測未解決的衝突
+  fetch_before_check: true         # 檢查前自動 fetch
+  show_recommendations: true       # 顯示建議步驟
+```
+
+---
+
+### 衝突偵測設定
+
+```yaml
+conflict_detection:
+  fetch_before_detect: true        # 偵測前 fetch
+  default_target_branch: main      # 預設比較分支
+  show_file_details: true          # 顯示逐檔衝突
+  show_resolution_guide: true      # 顯示解決指南
+```
+
+---
+
+### 決策引擎設定
+
+```yaml
+decision_engine:
+  default_target_branch: main      # 預設比較分支
+  fetch_before_analyze: true       # 分析前 fetch
+  show_situation: true             # 顯示當前狀態
+  show_risks: true                 # 顯示風險警告
+  show_next_command: true          # 建議下一個指令
+```
+
+---
+
+### 暫存管理設定
+
+```yaml
+stash_management:
+  backup_dir: ~/.git-ops/backups   # stash 備份目錄
+  age_warning_hours: 24            # stash 超過此時數顯示警告
+  age_danger_hours: 168            # 超過 7 天標記為危險
+  show_file_stats: true            # 詳細列表顯示檔案統計
+  show_age: true                   # 顯示 stash 時間
+```
+
+---
+
+### 分支管理設定
+
+```yaml
+branch_management:
+  default_base_branch: main        # 合併狀態比較分支
+  stale_days: 30                   # 超過 N 天未更新視為過期
+  merged_grace_days: 7             # 已合併分支保留 N 天
+  show_remote_branches: true       # 分析時顯示遠端分支
+  protected_branches:              # 這些分支永不刪除
+    - main
+    - master
+    - develop
+  fetch_before_analyze: true       # 分析前 fetch
+```
+
+---
+
+### 團隊規則設定
+
+```yaml
+team_rules:
+  commit_format:
+    style: conventional            # conventional|custom
+    pattern: '^(feat|fix|docs|style|refactor|perf|test|chore)(\(.+?\))?!?: .+'
+    max_length: 72
+  branch_naming:
+    enabled: true
+    pattern: '^(feature|fix|hotfix|release|chore)/[a-z0-9._-]+$'
+    exempt: [main, master, develop]
+  quality_checks: []               # 自訂品質檢查指令
+```
+
+---
+
+### 工作流設定
+
+```yaml
+workflows:
+  stop_on_error: true              # 步驟失敗時提示
+  show_step_numbers: true          # 顯示 [1/N] 步驟編號
+  verbose: false                   # 詳細輸出
+  overrides: {}                    # 覆蓋內建工作流
+  definitions: {}                  # 自訂工作流定義
+```
+
+詳細設定範例請參見 `git-ops.example.yml`。
+
+---
+
+### 執行器設定
+
+```yaml
+executor:
+  default_mode: print              # print|execute
+  show_preview: true               # 執行前顯示預覽
+```
+
+設定 `default_mode: execute` 後，`gops "stash"` 會直接執行（不需 `-x`）。
+使用 `--print` 可強制回到輸出模式。
+
+---
+
+### LLM Fallback 設定
+
+```yaml
+llm_fallback:
+  enabled: false                   # 預設關閉
+  model: qwen2.5:3b               # Ollama 模型
+  base_url: http://localhost:11434 # Ollama API 端點
+  timeout: 2                       # 最長等待秒數
+```
+
+當所有 regex 都無法匹配時，可選擇呼叫本地 Ollama LLM 分類意圖。
+**需要先安裝 Ollama**：`ollama pull qwen2.5:3b`
+
+---
+
 ## 實用配置範例
 
 ### 範例 1：個人快捷設定
@@ -286,10 +418,10 @@ custom_patterns:
 
 **使用**：
 ```bash
-gops "s" | bash              # stash
-gops "m" | bash              # checkout main
-gops "sync" | bash           # pull
-gops "done 'fix bug'" | bash # commit and push
+gops "s"  -x              # stash
+gops "m"  -x              # checkout main
+gops "sync"  -x           # pull
+gops "done 'fix bug'"  -x # commit and push
 ```
 
 ---
@@ -445,10 +577,10 @@ git:
 
 ```bash
 # 使用配置檔的設定
-gops "push" | bash  # 推送到 origin
+gops "push"  -x  # 推送到 origin
 
 # 命令列參數覆蓋配置
-REMOTE=upstream gops "push" | bash  # 推送到 upstream
+REMOTE=upstream gops "push"  -x  # 推送到 upstream
 ```
 
 ---
@@ -555,7 +687,7 @@ cp ~/.git-ops.yml ~/.git-ops.yml.backup
 
 ```bash
 # 修改配置後先測試
-gops "s" | bash  # 不要直接執行，先檢查生成的命令
+gops "s"  -x  # 不要直接執行，先檢查生成的命令
 ```
 
 ### 5. 文件化團隊配置
