@@ -240,6 +240,17 @@ workflows:
   #         label: Create hotfix branch
 
 # ============================================================================
+# Executor Settings (Built-in Execution Mode)
+# ============================================================================
+# Control how git-ops outputs generated scripts:
+#   gops "stash" -x       Execute directly (with [Y/n] confirmation)
+#   gops "stash" -x -y    Execute directly (skip confirmation)
+#   gops "stash" --print   Force print mode (override default_mode)
+# executor:
+#   default_mode: print      # print|execute — default output mode
+#   show_preview: true       # Show command preview before execution
+
+# ============================================================================
 # Usage Logging
 # ============================================================================
 logging:
@@ -323,6 +334,19 @@ behavior:
   use_force_with_lease: true    # Use --force-with-lease instead of --force
   interactive_mode: false       # Interactive mode for ambiguous commands
   verbose: false                # Show verbose output
+
+# ============================================================================
+# LLM Fallback (Local Ollama)
+# ============================================================================
+# When regex can't parse your input, optionally call a local LLM to classify.
+# Requires Ollama running locally: https://ollama.com
+# Setup: ollama pull qwen2.5:3b
+# DISABLED by default. Enable after installing Ollama.
+# llm_fallback:
+#   enabled: true                           # Enable LLM intent classification
+#   model: qwen2.5:3b                      # Good balance of accuracy (~1-2s) and size
+#   base_url: http://localhost:11434        # Ollama API endpoint
+#   timeout: 2                              # Max wait seconds
 
 # ============================================================================
 # Personal Preferences (Examples)

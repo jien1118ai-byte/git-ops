@@ -146,6 +146,14 @@ class ConfigManager:
             'interactive_mode': False,
             'verbose': False,
         },
+
+        # LLM fallback (local Ollama)
+        'llm_fallback': {
+            'enabled': False,
+            'model': 'qwen2.5:3b',
+            'base_url': 'http://localhost:11434',
+            'timeout': 2,
+        },
     }
 
     def __init__(self, config_file: Optional[str] = None):

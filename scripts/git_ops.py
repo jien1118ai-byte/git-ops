@@ -14,6 +14,7 @@ import argparse
 import os
 import re
 import shlex
+import sys
 from dataclasses import dataclass, field
 from typing import List, Optional
 
@@ -644,7 +645,7 @@ def parse_quoted_string(text: str) -> Optional[str]:
     return None
 
 # The NLP parser.
-def parse_operation_from_text(text: str) -> Plan:
+def parse_operation_from_text(text: str, llm_config: Optional[dict] = None) -> Plan:
     t = text.strip()
     tl = t.lower()
 
@@ -1054,7 +1055,20 @@ def parse_operation_from_text(text: str) -> Plan:
     if re.search(r"\b(preflight|pre-flight|health\s*check|repo\s*check)\b", tl):
         return Plan(op="preflight")
 
-    return Plan(op="status") # Default action
+    # LLM fallback: if no regex matched, try local LLM
+    if llm_config:
+        try:
+            from llm_fallback import llm_parse_intent
+            result = llm_parse_intent(t, llm_config)
+            if result:
+                params = result.get('params', {})
+                plan_fields = {f.name for f in Plan.__dataclass_fields__.values()}
+                safe_params = {k: v for k, v in params.items() if k in plan_fields}
+                return Plan(op=result['op'], **safe_params)
+        except ImportError:
+            pass
+
+    return Plan(op="status")  # Default action
 
 
 def _commit_block(plan: Plan) -> str:
@@ -1151,6 +1165,53 @@ trap 'rm -f "$COMMIT_MSG_FILE"' EXIT
     parts.append('rm -f "$COMMIT_MSG_FILE"\n')
 
     return ''.join(parts)
+
+
+def execute_bash(script: str, skip_confirm: bool = False, plan: Plan = None) -> int:
+    """Execute generated bash script directly with TTY preservation."""
+    import subprocess
+    import tempfile
+
+    # 1. Preview: extract key git commands from script
+    git_cmds = [l.strip() for l in script.splitlines()
+                if l.strip().startswith("git ") and not l.strip().startswith("git rev-parse")]
+
+    op_label = plan.op if plan else "unknown"
+    print(f"[git-ops] operation: {op_label}")
+    if git_cmds:
+        print("[git-ops] commands:")
+        for cmd in git_cmds[:8]:
+            print(f"  $ {cmd}")
+        if len(git_cmds) > 8:
+            print(f"  ... and {len(git_cmds) - 8} more")
+
+    # 2. [Y/n] confirmation
+    if not skip_confirm:
+        try:
+            answer = input("\n Execute? [Y/n] ").strip().lower()
+            if answer in ("n", "no"):
+                print("[git-ops] Cancelled.")
+                return 130
+        except (EOFError, KeyboardInterrupt):
+            print("\n[git-ops] Cancelled.")
+            return 130
+
+    # 3. Write to temp file and execute via bash (preserves TTY)
+    sys.stdout.flush()
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False, prefix='gops-') as f:
+        f.write(script)
+        script_path = f.name
+
+    try:
+        result = subprocess.run(
+            ['bash', script_path],
+            stdin=sys.stdin,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+        return result.returncode
+    finally:
+        os.unlink(script_path)
 
 
 def render(plan: Plan) -> str:
@@ -1815,6 +1876,9 @@ def main() -> None:
     parser.add_argument("--config", metavar="FILE", help="Path to configuration file")
     parser.add_argument("--no-log", action="store_true", help="Disable usage logging")
     parser.add_argument("--init-config", action="store_true", help="Initialize configuration file")
+    parser.add_argument("-x", "--execute", action="store_true", help="Execute generated bash script directly (instead of printing)")
+    parser.add_argument("-y", "--yes", action="store_true", help="Skip [Y/n] confirmation (use with -x)")
+    parser.add_argument("--print", dest="print_mode", action="store_true", help="Force print mode (overrides config default_mode: execute)")
 
     args = parser.parse_args()
 
@@ -1869,7 +1933,8 @@ def main() -> None:
             if custom:
                 input_text = custom
 
-        plan = parse_operation_from_text(input_text)
+        llm_cfg = config.get('llm_fallback', {}) if config else None
+        plan = parse_operation_from_text(input_text, llm_config=llm_cfg)
     elif args.op:
         arg_dict = vars(args)
         # Filter out non-Plan keys (argparse global args)
@@ -1934,9 +1999,23 @@ def main() -> None:
                 plan.commit_log = False
 
         bash = render(plan)
-        print("```bash")
-        print(bash.rstrip())
-        print("```")
+
+        # Determine execute vs print mode
+        should_execute = getattr(args, 'execute', False)
+        if not should_execute and config:
+            should_execute = config.get('executor.default_mode', 'print') == 'execute'
+        if getattr(args, 'print_mode', False):
+            should_execute = False
+
+        if should_execute:
+            skip_confirm = getattr(args, 'yes', False)
+            rc = execute_bash(bash, skip_confirm=skip_confirm, plan=plan)
+            if rc != 0:
+                sys.exit(rc)
+        else:
+            print("```bash")
+            print(bash.rstrip())
+            print("```")
 
         # Log usage if enabled
         if logger and input_text:
