@@ -33,9 +33,13 @@ Claude：[自動調用] 好的，執行 git stash...
 直接使用，零 tokens，即時執行：
 
 ```bash
+# 內建執行器模式（推薦）
+gops "stash my changes" -x         # 預覽 + [Y/n] 確認
+gops "commit 'fix' and push" -x -y # 跳過確認，直接執行
+gops "log graph all" -x -y
+
+# 傳統管道模式
 gops "stash my changes" | bash
-gops "commit 'fix' and push" | bash
-gops "log graph all" | bash
 ```
 
 **安裝：**
@@ -54,6 +58,13 @@ gops "log graph all" | bash
 - 📈 **自動學習** - 追蹤使用、建議優化
 - 🔒 **安全第一** - 預檢檢查、確認提示
 - 💰 **零成本** - 獨立運作，無 API 調用
+- 🚀 **內建執行器** - `-x` 直接執行，不再需要 `| bash`
+- 🧠 **智能決策引擎** - 自動分析狀態、推薦最佳操作
+- 🌳 **分支管理** - 分析、清理過期與已合併分支
+- 📋 **團隊規則驗證** - Commit 格式、分支命名、品質檢查
+- 📦 **進階 Stash 管理** - 詳細列表、備份匯出、安全套用
+- 🔄 **工作流模板** - 多步驟自動化（create-feature、commit-and-push）
+- ⚠️ **衝突偵測** - 合併前預先偵測潛在衝突
 
 ---
 
@@ -71,7 +82,7 @@ gops "log graph all" | bash
 source ~/.bashrc
 
 # 開始使用
-gops "status" | bash
+gops "status" -x -y
 ```
 
 ---
@@ -81,32 +92,55 @@ gops "status" | bash
 ### 基本操作
 
 ```bash
-gops "stash" | bash
-gops "checkout main" | bash
-gops "pull with rebase" | bash
-gops "commit 'fix bug' and push" | bash
+gops "stash" -x
+gops "checkout main" -x
+gops "pull with rebase" -x
+gops "commit 'fix bug' and push" -x
 ```
 
 ### 進階操作
 
 ```bash
 # 搜尋程式碼
-gops "search for TODO in *.py" | bash
+gops "search for TODO in *.py" -x
 
 # Commit 圖形化 🌳
-gops "log graph all" | bash
+gops "log graph all" -x -y
 
 # 互動式 rebase
-gops "rebase main interactively" | bash
+gops "rebase main interactively" -x
+```
+
+### 智能功能
+
+```bash
+# 預檢檢查
+gops "preflight check" -x -y
+
+# 智能建議：分析狀態，推薦操作
+gops "what should I do" -x -y
+
+# 偵測合併衝突
+gops "detect conflicts with main" -x -y
+
+# 分支分析與清理
+gops "analyze branches" -x -y
+gops "cleanup branches" -x
+
+# 工作流自動化
+gops "workflow commit-and-push" -x
+
+# 團隊規則驗證
+gops "validate commit message 'feat: new login'" -x -y
 ```
 
 ### 中文支援
 
 ```bash
-gops "儲存我的變更" | bash
-gops "切換到主分支" | bash
-gops "提交 '修復錯誤' 並推送" | bash
-gops "顯示所有分支的關係圖" | bash
+gops "儲存我的變更" -x
+gops "切換到主分支" -x
+gops "提交 '修復錯誤' 並推送" -x
+gops "顯示所有分支的關係圖" -x -y
 ```
 
 ### 使用別名（配置檔）
@@ -120,9 +154,9 @@ aliases:
 ```
 
 ```bash
-gops "s" | bash    # stash
-gops "m" | bash    # checkout main
-gops "g" | bash    # log graph all
+gops "s" -x    # stash
+gops "m" -x    # checkout main
+gops "g" -x -y # log graph all
 ```
 
 ---
@@ -130,7 +164,7 @@ gops "g" | bash    # log graph all
 ## 🎨 Commit 圖形化範例
 
 ```bash
-$ gops "log graph all" | bash
+$ gops "log graph all" -x -y
 ```
 
 輸出：
@@ -147,16 +181,19 @@ $ gops "log graph all" | bash
 
 ---
 
-## 📋 支援的操作（17 個）
+## 📋 支援的操作（24 個）
 
 ### 高頻操作
 ✅ stash, commit, checkout, pull, push, grep
 
 ### 一般操作
-✅ reset, restore, merge, log, diff
+✅ reset, restore, merge, log, diff, clean
 
 ### 專業操作
-✅ show, blame, tag, rebase, cherry-pick, bisect
+✅ show, blame, tag, rebase, cherry-pick, bisect, reflog
+
+### 智能功能
+✅ preflight（預檢）, decide（智能建議）, conflict-detect（衝突偵測）, validate（規則驗證）, workflow（工作流）, branch（分支管理）
 
 **完整說明**：參見 `SKILL.md`
 
@@ -167,6 +204,10 @@ $ gops "log graph all" | bash
 創建 `~/.git-ops.yml` 自訂行為：
 
 ```yaml
+# 執行器設定（預設 print 模式，改為 execute 可省略 -x）
+executor:
+  default_mode: print    # print|execute
+
 # 超短別名
 aliases:
   s: stash
@@ -373,8 +414,8 @@ pip install -r requirements.txt
 
 🟢 **PRODUCTION READY - 生產就緒**
 
-- ✅ 17/17 Git 操作支援
-- ✅ 100% 測試通過 (21/21)
+- ✅ 24 個操作支援（17 基本 + 7 智能功能）
+- ✅ 內建執行器（`-x` 直接執行）
 - ✅ 完整文檔
 - ✅ 生產級品質
 
@@ -396,7 +437,7 @@ pip install -r requirements.txt
 ./install-as-skill.sh    # 或 ./install.sh
 
 # 2. 開始使用
-gops "stash" | bash
+gops "stash" -x
 
 # 3. 自訂配置（可選）
 nano ~/.git-ops.yml
@@ -420,5 +461,5 @@ MIT License - 隨意使用！
 
 ---
 
-*Last Updated: 2026-01-30*
-*Version: 1.0.0 - Production Ready*
+*Last Updated: 2026-02-26*
+*Version: 2.0.0 - Built-in Executor + Smart Features*
