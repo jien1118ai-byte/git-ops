@@ -13,25 +13,25 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 
 class PreflightChecker:
     """Generates bash script fragments for preflight checks."""
 
     DEFAULT_CHECKS: Dict[str, bool] = {
-        'check_branch': True,
-        'check_detached_head': True,
-        'check_uncommitted': True,
-        'check_untracked': True,
-        'check_stashes': True,
-        'check_remote_status': True,
-        'check_conflicts': True,
-        'fetch_before_check': True,
-        'show_recommendations': True,
+        "check_branch": True,
+        "check_detached_head": True,
+        "check_uncommitted": True,
+        "check_untracked": True,
+        "check_stashes": True,
+        "check_remote_status": True,
+        "check_conflicts": True,
+        "fetch_before_check": True,
+        "show_recommendations": True,
     }
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """
         Initialize with optional config from git-ops.yml preflight section.
 
@@ -53,28 +53,28 @@ class PreflightChecker:
         parts = []
         parts.append(self._header())
 
-        if self.checks.get('check_branch', True):
+        if self.checks.get("check_branch", True):
             parts.append(self._check_branch())
-        if self.checks.get('check_detached_head', True):
+        if self.checks.get("check_detached_head", True):
             parts.append(self._check_detached_head())
-        if self.checks.get('check_uncommitted', True):
+        if self.checks.get("check_uncommitted", True):
             parts.append(self._check_uncommitted())
-        if self.checks.get('check_untracked', True):
+        if self.checks.get("check_untracked", True):
             parts.append(self._check_untracked())
-        if self.checks.get('check_stashes', True):
+        if self.checks.get("check_stashes", True):
             parts.append(self._check_stashes())
-        if self.checks.get('check_remote_status', True):
+        if self.checks.get("check_remote_status", True):
             parts.append(self._check_remote_status())
-        if self.checks.get('check_conflicts', True):
+        if self.checks.get("check_conflicts", True):
             parts.append(self._check_conflicts())
 
         parts.append(self._summary())
 
-        if self.checks.get('show_recommendations', True):
+        if self.checks.get("show_recommendations", True):
             parts.append(self._recommendations())
 
         parts.append(self._footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _header(self) -> str:
         return r"""# ---- preflight check begin ----
@@ -122,7 +122,8 @@ fi
 
     def _check_untracked(self) -> str:
         return r"""# -- Untracked Files --
-UNTRACKED_COUNT=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+UNTRACKED_COUNT=$(git ls-files --others --exclude-standard \
+  2>/dev/null | wc -l | tr -d ' ')
 if [ "$UNTRACKED_COUNT" -gt 0 ]; then
   echo "  [!] $UNTRACKED_COUNT untracked file(s)"
   PREFLIGHT_WARNINGS=$((PREFLIGHT_WARNINGS + 1))
@@ -143,7 +144,7 @@ fi
 
     def _check_remote_status(self) -> str:
         fetch_cmd = ""
-        if self.checks.get('fetch_before_check', True):
+        if self.checks.get("fetch_before_check", True):
             fetch_cmd = 'git fetch "$REMOTE" --quiet 2>/dev/null || true\n'
 
         return f"""{fetch_cmd}# -- Remote Status --
@@ -231,33 +232,33 @@ echo "========================================"
 """
 
 
-def main():
+def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description='Git-ops preflight checker')
-    parser.add_argument('--no-fetch', action='store_true',
-                        help='Skip remote fetch')
-    parser.add_argument('--no-recommendations', action='store_true',
-                        help='Skip recommendations section')
-    parser.add_argument('--config', metavar='FILE',
-                        help='Path to configuration file')
+    parser = argparse.ArgumentParser(description="Git-ops preflight checker")
+    parser.add_argument("--no-fetch", action="store_true", help="Skip remote fetch")
+    parser.add_argument(
+        "--no-recommendations", action="store_true", help="Skip recommendations section"
+    )
+    parser.add_argument("--config", metavar="FILE", help="Path to configuration file")
 
     args = parser.parse_args()
 
     # Load config if available
-    config = {}
+    config: Dict[str, Any] = {}
     try:
         from config_manager import ConfigManager
+
         cm = ConfigManager(args.config)
-        config = cm.get('preflight', {}) or {}
+        config = cm.get("preflight", {}) or {}
     except ImportError:
         pass
 
     if args.no_fetch:
-        config['fetch_before_check'] = False
-        config['check_remote_status'] = False
+        config["fetch_before_check"] = False
+        config["check_remote_status"] = False
     if args.no_recommendations:
-        config['show_recommendations'] = False
+        config["show_recommendations"] = False
 
     checker = PreflightChecker(config)
     script = checker.generate_script()
@@ -267,5 +268,5 @@ def main():
     print("```")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

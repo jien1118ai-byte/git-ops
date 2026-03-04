@@ -4,5 +4,14 @@
 # Configuration file support (YAML)
 PyYAML>=6.0
 
+# Testing
+pytest>=7.0
+pytest-cov>=4.0
+
+# Code quality
+black>=23.0
+flake8>=6.0
+mypy>=1.0
+
 # Note: All other features work without dependencies
 # Only configuration file (git-ops.yml) requires PyYAML

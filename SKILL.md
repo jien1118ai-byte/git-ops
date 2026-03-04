@@ -55,7 +55,7 @@ gops "stash" -x -y         # Execute without confirmation
 gops "stash" | bash         # Traditional pipe mode
 ```
 
-## Supported Operations (24)
+## Supported Operations (25)
 
 ### 1. Commit & Push
 **Natural language:**
@@ -175,12 +175,16 @@ python3 scripts/git_ops.py log --author username -n 20
 - "cherry-pick abc123"
 - "cherry-pick abc123 def456 and push"
 - "cherry-pick abc123 without commit"
+- "cherry-pick abc123^..def456" (range)
+- "cherry-pick from abc123 to def456"
+- "cherry-pick abc123 到 def456"
 
 **Structured:**
 ```bash
 python3 scripts/git_ops.py cherry-pick abc123
 python3 scripts/git_ops.py cherry-pick abc123 def456 --push
 python3 scripts/git_ops.py cherry-pick abc123 --no-commit
+python3 scripts/git_ops.py cherry-pick --range abc123^..def456
 ```
 
 ### 9. Merge
@@ -306,7 +310,28 @@ python3 scripts/git_ops.py push
 python3 scripts/git_ops.py push --force
 ```
 
-### 18. Preflight Check (Repository Health)
+### 18. Pull
+**Natural language:**
+- "pull"
+- "git pull"
+- "pull main"
+- "pull from feature/abc"
+- "拉取"
+- "拉取 main"
+- "pull --merge" / "pull 用 merge"
+- "force pull" / "pull --force" / "強制 pull" / "pull 覆蓋本地" ← 自動丟棄衝突的本地修改再 pull
+
+**Structured:**
+```bash
+python3 scripts/git_ops.py pull
+python3 scripts/git_ops.py pull main
+python3 scripts/git_ops.py pull --merge
+python3 scripts/git_ops.py pull main --merge
+python3 scripts/git_ops.py pull --force          # 自動 restore 衝突檔案再 pull
+python3 scripts/git_ops.py pull main --force
+```
+
+### 19. Preflight Check (Repository Health)
 **Natural language:**
 - "preflight check"
 - "health check"
@@ -317,7 +342,7 @@ python3 scripts/git_ops.py push --force
 python3 scripts/git_ops.py preflight
 ```
 
-### 19. Conflict Detection
+### 20. Conflict Detection
 **Natural language:**
 - "detect conflicts with main"
 - "check for conflicts against develop"
@@ -327,7 +352,7 @@ python3 scripts/git_ops.py preflight
 python3 scripts/git_ops.py conflict-detect --target main
 ```
 
-### 20. Conflict Resolution Guide
+### 21. Conflict Resolution Guide
 **Natural language:**
 - "resolve conflicts"
 - "conflict status"
@@ -338,7 +363,7 @@ python3 scripts/git_ops.py conflict-resolve
 python3 scripts/git_ops.py conflict-resolve --file src/app.py
 ```
 
-### 21. Smart Recommendations (Decision Engine)
+### 22. Smart Recommendations (Decision Engine)
 **Natural language:**
 - "what should I do"
 - "recommend next step"
@@ -350,7 +375,7 @@ python3 scripts/git_ops.py decide
 python3 scripts/git_ops.py decide --goal "prepare for merge"
 ```
 
-### 22. Team Rules Validation
+### 23. Team Rules Validation
 **Natural language:**
 - "validate commit message 'feat: add login'"
 - "validate branch name"
@@ -364,7 +389,7 @@ python3 scripts/git_ops.py validate quality
 python3 scripts/git_ops.py validate rules
 ```
 
-### 23. Workflow Templates
+### 24. Workflow Templates
 **Natural language:**
 - "workflow list"
 - "workflow commit-and-push"
@@ -377,7 +402,7 @@ python3 scripts/git_ops.py workflow run commit_and_push
 python3 scripts/git_ops.py workflow run create_feature --param name=user-auth
 ```
 
-### 24. Branch Management & Cleanup
+### 25. Branch Management & Cleanup
 **Natural language:**
 - "analyze branches"
 - "cleanup branches"
@@ -506,6 +531,7 @@ The NLP parser supports both **English** and **Chinese (繁體中文)** keywords
 - 建議/推薦 (recommend), 驗證 (validate)
 - 工作流/流程 (workflow), 分析 (analyze), 清理 (cleanup)
 - 暫存 (stash), 安全套用暫存 (safe apply stash)
+- 拉取 (pull)
 
 When LLM fallback is enabled, free-form Chinese input like "把修改存起來" or "送出修改到遠端" can also be understood.
 

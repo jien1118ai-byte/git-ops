@@ -26,11 +26,11 @@ class ConflictDetector:
     """Generates bash script fragments for conflict detection and resolution."""
 
     DEFAULT_CONFIG: Dict[str, object] = {
-        'fetch_before_detect': True,
-        'default_target_branch': 'main',
-        'show_file_details': True,
-        'show_resolution_guide': True,
-        'cleanup_on_error': True,
+        "fetch_before_detect": True,
+        "default_target_branch": "main",
+        "show_file_details": True,
+        "show_resolution_guide": True,
+        "cleanup_on_error": True,
     }
 
     def __init__(self, config: Optional[dict] = None):
@@ -59,7 +59,7 @@ class ConflictDetector:
         Returns:
             Bash script string.
         """
-        target = target_branch or self.config.get('default_target_branch', 'main')
+        target = target_branch or self.config.get("default_target_branch", "main")
 
         parts = []
         parts.append(self._detect_header())
@@ -69,11 +69,11 @@ class ConflictDetector:
         parts.append(self._detect_cleanup())
         parts.append(self._detect_report())
 
-        if self.config.get('show_resolution_guide', True):
+        if self.config.get("show_resolution_guide", True):
             parts.append(self._detect_resolution_hints())
 
         parts.append(self._detect_footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _detect_header(self) -> str:
         return r"""# ---- conflict detection begin ----
@@ -86,7 +86,7 @@ echo ""
 
     def _detect_setup(self, target_branch: str) -> str:
         fetch_cmd = ""
-        if self.config.get('fetch_before_detect', True):
+        if self.config.get("fetch_before_detect", True):
             fetch_cmd = 'git fetch "$REMOTE" --quiet 2>/dev/null || true\n'
 
         return f"""{fetch_cmd}# -- Save current state --
@@ -132,7 +132,8 @@ MERGE_EXIT=$?
 """
 
     def _detect_analyze(self) -> str:
-        parts = [r"""# -- Analyze results --
+        parts = [
+            r"""# -- Analyze results --
 CONFLICT_FILES=$(git diff --name-only --diff-filter=U 2>/dev/null || true)
 if [ -n "$CONFLICT_FILES" ]; then
   CONFLICT_COUNT=$(echo "$CONFLICT_FILES" | wc -l | tr -d ' ')
@@ -147,10 +148,12 @@ if [ -n "$CHANGED_FILES" ]; then
 else
   CHANGED_COUNT=0
 fi
-"""]
+"""
+        ]
 
-        if self.config.get('show_file_details', True):
-            parts.append(r"""# Collect per-file details for conflicting files
+        if self.config.get("show_file_details", True):
+            parts.append(
+                r"""# Collect per-file details for conflicting files
 CONFLICT_DETAILS=""
 if [ "$CONFLICT_COUNT" -gt 0 ]; then
   while IFS= read -r cfile; do
@@ -160,9 +163,10 @@ if [ "$CONFLICT_COUNT" -gt 0 ]; then
     CONFLICT_DETAILS="${CONFLICT_DETAILS}${cfile}|${MARKERS}\n"
   done <<< "$CONFLICT_FILES"
 fi
-""")
+"""
+            )
 
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _detect_cleanup(self) -> str:
         return r"""# -- Cleanup (restore original state) --
@@ -177,7 +181,8 @@ trap - EXIT
 """
 
     def _detect_report(self) -> str:
-        parts = [r"""# -- Report --
+        parts = [
+            r"""# -- Report --
 echo "----------------------------------------"
 if [ "$CONFLICT_COUNT" -gt 0 ]; then
   echo "  [!!] $CONFLICT_COUNT file(s) with conflicts detected"
@@ -187,10 +192,12 @@ if [ "$CONFLICT_COUNT" -gt 0 ]; then
     [ -z "$cfile" ] && continue
     echo "  * $cfile"
   done <<< "$CONFLICT_FILES"
-"""]
+"""
+        ]
 
-        if self.config.get('show_file_details', True):
-            parts.append(r"""
+        if self.config.get("show_file_details", True):
+            parts.append(
+                r"""
   # Show conflict marker counts
   if [ -n "$CONFLICT_DETAILS" ]; then
     echo ""
@@ -206,9 +213,11 @@ if [ "$CONFLICT_COUNT" -gt 0 ]; then
       fi
     done
   fi
-""")
+"""
+            )
 
-        parts.append(r"""elif [ "$CHANGED_COUNT" -gt 0 ]; then
+        parts.append(
+            r"""elif [ "$CHANGED_COUNT" -gt 0 ]; then
   echo "  [ok] No conflicts detected"
   echo "  [i] $CHANGED_COUNT file(s) will be modified (clean merge)"
 else
@@ -218,9 +227,10 @@ fi
 
 echo ""
 echo "----------------------------------------"
-""")
+"""
+        )
 
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _detect_resolution_hints(self) -> str:
         return r"""# -- Resolution hints --
@@ -273,7 +283,7 @@ echo "========================================"
             parts.append(self._resolve_general_options())
 
         parts.append(self._resolve_footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _resolve_header(self) -> str:
         return r"""# ---- conflict resolution guide begin ----
@@ -412,15 +422,21 @@ echo ""
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Git-ops conflict detector')
-    parser.add_argument('--target', metavar='BRANCH',
-                        help='Target branch to detect conflicts against')
-    parser.add_argument('--resolve', action='store_true',
-                        help='Show resolution guidance for current conflicts')
-    parser.add_argument('--file', metavar='PATH',
-                        help='Specific file for resolution guidance (use with --resolve)')
-    parser.add_argument('--config', metavar='FILE',
-                        help='Path to configuration file')
+    parser = argparse.ArgumentParser(description="Git-ops conflict detector")
+    parser.add_argument(
+        "--target", metavar="BRANCH", help="Target branch to detect conflicts against"
+    )
+    parser.add_argument(
+        "--resolve",
+        action="store_true",
+        help="Show resolution guidance for current conflicts",
+    )
+    parser.add_argument(
+        "--file",
+        metavar="PATH",
+        help="Specific file for resolution guidance (use with --resolve)",
+    )
+    parser.add_argument("--config", metavar="FILE", help="Path to configuration file")
 
     args = parser.parse_args()
 
@@ -428,8 +444,9 @@ def main():
     config = {}
     try:
         from config_manager import ConfigManager
+
         cm = ConfigManager(args.config)
-        config = cm.get('conflict_detection', {}) or {}
+        config = cm.get("conflict_detection", {}) or {}
     except ImportError:
         pass
 
@@ -448,5 +465,5 @@ def main():
     print("```")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

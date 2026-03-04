@@ -14,22 +14,22 @@ Usage:
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Dict, Optional
 
 
 class DecisionEngine:
     """Generates bash scripts that analyze repo state and recommend workflows."""
 
     DEFAULT_CONFIG = {
-        'default_target_branch': 'main',
-        'fetch_before_analyze': True,
-        'show_situation': True,
-        'show_risks': True,
-        'show_next_command': True,
+        "default_target_branch": "main",
+        "fetch_before_analyze": True,
+        "show_situation": True,
+        "show_risks": True,
+        "show_next_command": True,
     }
 
-    def __init__(self, config: Optional[dict] = None):
-        self.config = {**self.DEFAULT_CONFIG}
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+        self.config: Dict[str, Any] = {**self.DEFAULT_CONFIG}
         if config:
             self.config.update(config)
 
@@ -40,19 +40,19 @@ class DecisionEngine:
         parts.append(self._gather_state())
         parts.append(self._detect_goal(goal))
 
-        if self.config.get('show_situation', True):
+        if self.config.get("show_situation", True):
             parts.append(self._show_situation())
 
         parts.append(self._recommend_steps())
 
-        if self.config.get('show_risks', True):
+        if self.config.get("show_risks", True):
             parts.append(self._show_risks())
 
-        if self.config.get('show_next_command', True):
+        if self.config.get("show_next_command", True):
             parts.append(self._suggest_command())
 
         parts.append(self._footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _header(self) -> str:
         return r"""# ---- decision engine begin ----
@@ -71,12 +71,15 @@ PREFLIGHT_ERRORS=0
         """Reuse PreflightChecker's _check_* methods to set bash state variables."""
         try:
             from preflight_checker import PreflightChecker
-            checker = PreflightChecker({
-                'show_recommendations': False,
-                'fetch_before_check': self.config.get('fetch_before_analyze', True),
-            })
+
+            checker = PreflightChecker(
+                {
+                    "show_recommendations": False,
+                    "fetch_before_check": self.config.get("fetch_before_analyze", True),
+                }
+            )
             parts = []
-            parts.append('# -- Gather repository state --')
+            parts.append("# -- Gather repository state --")
             # Reuse individual checks that set $MODIFIED_COUNT, $STAGED_COUNT, etc.
             parts.append(checker._check_uncommitted())
             parts.append(checker._check_untracked())
@@ -89,17 +92,18 @@ PREFLIGHT_ERRORS=0
 
         # Additional state the decision engine needs
         parts.append(self._check_merge_rebase_state())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def _inline_gather_state(self) -> str:
         """Fallback state gathering when PreflightChecker is not available."""
-        fetch = ''
-        if self.config.get('fetch_before_analyze', True):
+        fetch = ""
+        if self.config.get("fetch_before_analyze", True):
             fetch = 'git fetch "$REMOTE" --quiet 2>/dev/null || true\n'
         return f"""# -- Gather repository state (inline) --
 {fetch}MODIFIED_COUNT=$(git diff --name-only 2>/dev/null | wc -l | tr -d ' ')
 STAGED_COUNT=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
-UNTRACKED_COUNT=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+UNTRACKED_COUNT=$(git ls-files --others --exclude-standard \
+  2>/dev/null | wc -l | tr -d ' ')
 STASH_COUNT=$(git stash list 2>/dev/null | wc -l | tr -d ' ')
 CONFLICT_COUNT=$(git ls-files --unmerged 2>/dev/null | wc -l | tr -d ' ')
 if has_upstream; then
@@ -197,7 +201,8 @@ STEP=1
 if [ "$GOAL" = "resolve-conflict" ]; then
   if [ "${CONFLICT_COUNT:-0}" -gt 0 ]; then
     echo "  $STEP. Resolve conflicts in each file:"
-    git diff --name-only --diff-filter=U 2>/dev/null | while read -r f; do echo "        $f"; done
+    git diff --name-only --diff-filter=U 2>/dev/null | \
+      while read -r f; do echo "        $f"; done
     STEP=$((STEP + 1))
   fi
   if [ "$IN_MERGE" -eq 1 ]; then
@@ -309,34 +314,39 @@ echo "========================================"
 """
 
 
-def main():
+def main() -> None:
     import argparse
 
-    parser = argparse.ArgumentParser(description='Git-ops decision engine')
-    parser.add_argument('--goal', choices=['commit', 'push', 'merge', 'pr'],
-                        help='Specify goal instead of auto-detecting')
-    parser.add_argument('--no-fetch', action='store_true',
-                        help='Skip remote fetch before analysis')
-    parser.add_argument('--no-risks', action='store_true',
-                        help='Skip risk assessment section')
-    parser.add_argument('--config', metavar='FILE',
-                        help='Path to configuration file')
+    parser = argparse.ArgumentParser(description="Git-ops decision engine")
+    parser.add_argument(
+        "--goal",
+        choices=["commit", "push", "merge", "pr"],
+        help="Specify goal instead of auto-detecting",
+    )
+    parser.add_argument(
+        "--no-fetch", action="store_true", help="Skip remote fetch before analysis"
+    )
+    parser.add_argument(
+        "--no-risks", action="store_true", help="Skip risk assessment section"
+    )
+    parser.add_argument("--config", metavar="FILE", help="Path to configuration file")
 
     args = parser.parse_args()
 
     # Load config if available
-    config = {}
+    config: Dict[str, Any] = {}
     try:
         from config_manager import ConfigManager
+
         cm = ConfigManager(args.config)
-        config = cm.get('decision_engine', {}) or {}
+        config = cm.get("decision_engine", {}) or {}
     except ImportError:
         pass
 
     if args.no_fetch:
-        config['fetch_before_analyze'] = False
+        config["fetch_before_analyze"] = False
     if args.no_risks:
-        config['show_risks'] = False
+        config["show_risks"] = False
 
     engine = DecisionEngine(config)
     script = engine.generate_script(args.goal)
@@ -346,5 +356,5 @@ def main():
     print("```")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

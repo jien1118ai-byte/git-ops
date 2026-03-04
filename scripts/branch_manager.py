@@ -21,12 +21,12 @@ class BranchManager:
     """Generates bash script fragments for branch analysis and cleanup."""
 
     DEFAULT_CONFIG: Dict = {
-        'default_base_branch': 'main',
-        'stale_days': 30,
-        'merged_grace_days': 7,
-        'show_remote_branches': True,
-        'protected_branches': ['main', 'master', 'develop', 'staging'],
-        'fetch_before_analyze': True,
+        "default_base_branch": "main",
+        "stale_days": 30,
+        "merged_grace_days": 7,
+        "show_remote_branches": True,
+        "protected_branches": ["main", "master", "develop", "staging"],
+        "fetch_before_analyze": True,
     }
 
     def __init__(self, config: Optional[dict] = None):
@@ -36,20 +36,21 @@ class BranchManager:
 
     def generate_analyze_script(self) -> str:
         """Generate bash that performs full branch analysis."""
-        base = self.config.get('default_base_branch', 'main')
-        stale_days = int(self.config.get('stale_days', 30))
-        fetch = self.config.get('fetch_before_analyze', True)
-        show_remote = self.config.get('show_remote_branches', True)
-        protected = self.config.get('protected_branches',
-                                    ['main', 'master', 'develop', 'staging'])
+        base = self.config.get("default_base_branch", "main")
+        stale_days = int(self.config.get("stale_days", 30))
+        fetch = self.config.get("fetch_before_analyze", True)
+        show_remote = self.config.get("show_remote_branches", True)
+        protected = self.config.get(
+            "protected_branches", ["main", "master", "develop", "staging"]
+        )
 
         parts = [self._header("BRANCH ANALYSIS")]
 
         # Protected branches as bash array
-        protected_bash = ' '.join(f'"{b}"' for b in protected)
-        parts.append(f'PROTECTED_BRANCHES=({protected_bash})\n')
+        protected_bash = " ".join(f'"{b}"' for b in protected)
+        parts.append(f"PROTECTED_BRANCHES=({protected_bash})\n")
         parts.append(f'BASE_BRANCH="{base}"\n')
-        parts.append(f'STALE_DAYS={stale_days}\n')
+        parts.append(f"STALE_DAYS={stale_days}\n")
 
         if fetch:
             parts.append(self._fetch_block())
@@ -58,47 +59,56 @@ class BranchManager:
         parts.append(self._classify_branches())
 
         # Summary
-        parts.append(r"""echo "--- Summary ---"
+        parts.append(
+            r"""echo "--- Summary ---"
 echo ""
 echo "  Active branches:  $ACTIVE_COUNT"
 echo "  Stale branches:   $STALE_COUNT  (no commits in ${STALE_DAYS}+ days)"
 echo "  Merged branches:  $MERGED_COUNT (fully merged into $BASE_BRANCH)"
 echo "  Total:            $TOTAL_COUNT"
 echo ""
-""")
+"""
+        )
 
         # Active branches detail
-        parts.append(r"""if [ "$ACTIVE_COUNT" -gt 0 ]; then
+        parts.append(
+            r"""if [ "$ACTIVE_COUNT" -gt 0 ]; then
   echo "--- Active Branches ---"
   echo ""
   printf '%b' "$ACTIVE_LINES"
   echo ""
 fi
-""")
+"""
+        )
 
         # Stale branches detail
-        parts.append(r"""if [ "$STALE_COUNT" -gt 0 ]; then
+        parts.append(
+            r"""if [ "$STALE_COUNT" -gt 0 ]; then
   echo "--- Stale Branches ---"
   echo ""
   printf '%b' "$STALE_LINES"
   echo ""
 fi
-""")
+"""
+        )
 
         # Merged branches detail
-        parts.append(r"""if [ "$MERGED_COUNT" -gt 0 ]; then
+        parts.append(
+            r"""if [ "$MERGED_COUNT" -gt 0 ]; then
   echo "--- Merged Branches ---"
   echo ""
   printf '%b' "$MERGED_LINES"
   echo ""
 fi
-""")
+"""
+        )
 
         if show_remote:
             parts.append(self._remote_branches_block())
 
         # Suggestions
-        parts.append(r"""echo "--- Suggestions ---"
+        parts.append(
+            r"""echo "--- Suggestions ---"
 echo ""
 if [ "$MERGED_COUNT" -gt 0 ]; then
   echo "  Delete merged branches:"
@@ -116,26 +126,28 @@ if [ "$MERGED_COUNT" -eq 0 ] && [ "$STALE_COUNT" -eq 0 ]; then
   echo "  All branches look healthy!"
   echo ""
 fi
-""")
+"""
+        )
         parts.append(self._footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def generate_cleanup_script(self) -> str:
         """Generate bash that interactively cleans up branches."""
-        base = self.config.get('default_base_branch', 'main')
-        stale_days = int(self.config.get('stale_days', 30))
-        grace_days = int(self.config.get('merged_grace_days', 7))
-        fetch = self.config.get('fetch_before_analyze', True)
-        protected = self.config.get('protected_branches',
-                                    ['main', 'master', 'develop', 'staging'])
+        base = self.config.get("default_base_branch", "main")
+        stale_days = int(self.config.get("stale_days", 30))
+        grace_days = int(self.config.get("merged_grace_days", 7))
+        fetch = self.config.get("fetch_before_analyze", True)
+        protected = self.config.get(
+            "protected_branches", ["main", "master", "develop", "staging"]
+        )
 
         parts = [self._header("BRANCH CLEANUP")]
 
-        protected_bash = ' '.join(f'"{b}"' for b in protected)
-        parts.append(f'PROTECTED_BRANCHES=({protected_bash})\n')
+        protected_bash = " ".join(f'"{b}"' for b in protected)
+        parts.append(f"PROTECTED_BRANCHES=({protected_bash})\n")
         parts.append(f'BASE_BRANCH="{base}"\n')
-        parts.append(f'STALE_DAYS={stale_days}\n')
-        parts.append(f'GRACE_DAYS={grace_days}\n')
+        parts.append(f"STALE_DAYS={stale_days}\n")
+        parts.append(f"GRACE_DAYS={grace_days}\n")
 
         if fetch:
             parts.append(self._fetch_block())
@@ -144,11 +156,14 @@ fi
         parts.append(self._cleanup_candidates())
 
         # Interactive per-branch deletion
-        parts.append(r"""if [ ${#CANDIDATES[@]} -eq 0 ]; then
+        parts.append(
+            r"""if [ ${#CANDIDATES[@]} -eq 0 ]; then
   echo "  No cleanup candidates found. All branches look good!"
-""")
+"""
+        )
         parts.append(self._footer_block())
-        parts.append(r"""fi
+        parts.append(
+            r"""fi
 
 echo "Found ${#CANDIDATES[@]} cleanup candidate(s):"
 echo ""
@@ -206,24 +221,26 @@ echo "--- Cleanup Complete ---"
 echo ""
 echo "  Deleted: $DELETED"
 echo "  Skipped: $SKIPPED"
-""")
+"""
+        )
         parts.append(self._footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     def generate_delete_merged_script(self) -> str:
         """Generate bash that deletes all merged branches."""
-        base = self.config.get('default_base_branch', 'main')
-        grace_days = int(self.config.get('merged_grace_days', 7))
-        fetch = self.config.get('fetch_before_analyze', True)
-        protected = self.config.get('protected_branches',
-                                    ['main', 'master', 'develop', 'staging'])
+        base = self.config.get("default_base_branch", "main")
+        grace_days = int(self.config.get("merged_grace_days", 7))
+        fetch = self.config.get("fetch_before_analyze", True)
+        protected = self.config.get(
+            "protected_branches", ["main", "master", "develop", "staging"]
+        )
 
         parts = [self._header("DELETE MERGED BRANCHES")]
 
-        protected_bash = ' '.join(f'"{b}"' for b in protected)
-        parts.append(f'PROTECTED_BRANCHES=({protected_bash})\n')
+        protected_bash = " ".join(f'"{b}"' for b in protected)
+        parts.append(f"PROTECTED_BRANCHES=({protected_bash})\n")
         parts.append(f'BASE_BRANCH="{base}"\n')
-        parts.append(f'GRACE_DAYS={grace_days}\n')
+        parts.append(f"GRACE_DAYS={grace_days}\n")
 
         if fetch:
             parts.append(self._fetch_block())
@@ -231,7 +248,8 @@ echo "  Skipped: $SKIPPED"
         # Helper function
         parts.append(self._is_protected_func())
 
-        parts.append(r"""# Collect merged branches
+        parts.append(
+            r"""# Collect merged branches
 MERGED_BRANCHES=()
 NOW_EPOCH=$(date +%s)
 
@@ -258,9 +276,11 @@ done
 if [ ${#MERGED_BRANCHES[@]} -eq 0 ]; then
   echo "  No merged branches to delete."
   echo "  (Protected branches and branches within ${GRACE_DAYS}-day grace period are excluded.)"
-""")
+"""
+        )
         parts.append(self._footer_block())
-        parts.append(r"""fi
+        parts.append(
+            r"""fi
 
 echo "The following branches are fully merged into $BASE_BRANCH"
 echo "and will be deleted:"
@@ -293,16 +313,19 @@ echo "  Deleted: $DELETED"
 if [ "$FAILED" -gt 0 ]; then
   echo "  Failed:  $FAILED"
 fi
-""")
+"""
+        )
 
         # Prune remote tracking refs
-        parts.append(r"""echo ""
+        parts.append(
+            r"""echo ""
 echo "Pruning stale remote tracking references..."
 git remote prune "$REMOTE" 2>/dev/null && echo "  [ok] Remote refs pruned" || echo "  [!] Could not prune remote refs"
-""")
+"""
+        )
 
         parts.append(self._footer())
-        return '\n'.join(parts)
+        return "\n".join(parts)
 
     # ---- helpers ----
 
@@ -349,7 +372,8 @@ echo ""
         """Generate bash that collects branch info into variables."""
         parts = []
         parts.append(self._is_protected_func())
-        parts.append(r"""# Gather all local branches with metadata
+        parts.append(
+            r"""# Gather all local branches with metadata
 NOW_EPOCH=$(date +%s)
 
 ACTIVE_LINES=""
@@ -433,8 +457,9 @@ while IFS='|' read -r REFNAME COMMIT_EPOCH COMMIT_DATE COMMIT_MSG; do
 done < <(git for-each-ref --sort=-committerdate refs/heads/ \
   --format='%(refname)|%(committerdate:unix)|%(committerdate:short)|%(subject)' 2>/dev/null)
 
-""")
-        return '\n'.join(parts)
+"""
+        )
+        return "\n".join(parts)
 
     def _classify_branches(self) -> str:
         """Placeholder — classification is done inline in _gather_branches."""
@@ -444,7 +469,8 @@ done < <(git for-each-ref --sort=-committerdate refs/heads/ \
         """Generate bash that builds arrays of cleanup candidates."""
         parts = []
         parts.append(self._is_protected_func())
-        parts.append(r"""# Build cleanup candidate list
+        parts.append(
+            r"""# Build cleanup candidate list
 NOW_EPOCH=$(date +%s)
 CANDIDATES=()
 REASONS=()
@@ -491,8 +517,9 @@ while IFS='|' read -r REFNAME COMMIT_EPOCH COMMIT_DATE COMMIT_MSG; do
 done < <(git for-each-ref --sort=-committerdate refs/heads/ \
   --format='%(refname)|%(committerdate:unix)|%(committerdate:short)|%(subject)' 2>/dev/null)
 
-""")
-        return '\n'.join(parts)
+"""
+        )
+        return "\n".join(parts)
 
     def _remote_branches_block(self) -> str:
         """Generate bash that shows remote-only branches."""
@@ -526,14 +553,14 @@ echo ""
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Git-ops branch manager')
-    sub = parser.add_subparsers(dest='command', required=True)
+    parser = argparse.ArgumentParser(description="Git-ops branch manager")
+    sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser('analyze', help='Analyze all branches')
-    sub.add_parser('cleanup', help='Interactive branch cleanup')
-    sub.add_parser('delete-merged', help='Delete all merged branches')
+    sub.add_parser("analyze", help="Analyze all branches")
+    sub.add_parser("cleanup", help="Interactive branch cleanup")
+    sub.add_parser("delete-merged", help="Delete all merged branches")
 
-    parser.add_argument('--config', metavar='FILE', help='Path to configuration file')
+    parser.add_argument("--config", metavar="FILE", help="Path to configuration file")
 
     args = parser.parse_args()
 
@@ -541,18 +568,19 @@ def main():
     config = {}
     try:
         from config_manager import ConfigManager
+
         cm = ConfigManager(args.config)
-        config = cm.get('branch_management', {}) or {}
+        config = cm.get("branch_management", {}) or {}
     except ImportError:
         pass
 
     manager = BranchManager(config)
 
-    if args.command == 'analyze':
+    if args.command == "analyze":
         script = manager.generate_analyze_script()
-    elif args.command == 'cleanup':
+    elif args.command == "cleanup":
         script = manager.generate_cleanup_script()
-    elif args.command == 'delete-merged':
+    elif args.command == "delete-merged":
         script = manager.generate_delete_merged_script()
     else:
         parser.print_help()
@@ -563,5 +591,5 @@ def main():
     print("```")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

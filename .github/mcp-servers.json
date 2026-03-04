@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "bash": {
+      "command": "npx",
+      "args": ["@anthropic-ai/bash-mcp"],
+      "alwaysAllow": ["bash"]
+    },
+    "git": {
+      "command": "npx",
+      "args": ["@anthropic-ai/git-mcp"],
+      "alwaysAllow": ["git"],
+      "env": {
+        "GIT_REPO_PATH": "."
+      }
+    }
+  }
+}
