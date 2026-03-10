@@ -55,12 +55,15 @@ If the output is empty (nothing staged yet), run:
 git diff HEAD
 ```
 
+If **both** outputs are empty (clean working tree with nothing to commit), skip the rest of Step 1.5 entirely and set `ENRICHED_ARGS = $ARGUMENTS` unchanged — git_ops.py will handle the "nothing to commit" case itself.
+
 ### 1.5.2 Analyze the diff
 
 Read the diff output and determine:
 
 - **commit_type**: one of `fix` / `feature` / `update` / `remove` / `docs` / `test` / `chore`
 - **diff_summary**: one sentence describing what changed overall
+- **auto_message**: a concise conventional-commit-style message, e.g. `feat: add login endpoint` or `fix: correct null pointer in auth handler`
 - For **fix** commits additionally determine:
   - **root_cause**: what was the underlying cause of the bug (from reading the removed/changed lines)
   - **fix_method**: how was it fixed (from reading the added lines)
@@ -69,17 +72,20 @@ Keep root_cause and fix_method concise (1–2 sentences each).
 
 ### 1.5.3 Enrich the NLP input
 
-If it is a **fix** commit and root_cause was identified, append it to the arguments before passing to git_ops.py:
+**Check if the user already provided a commit message.** A message is considered provided if `$ARGUMENTS` contains a quoted string — either single-quoted (`'fix auth bug'`) or double-quoted (`"fix auth bug"`). Chinese requests without any quotes (e.g. `提交並推送`) count as **no message provided**.
 
-```
-<original ARGUMENTS> root cause: <root_cause>
-```
+**If no message provided:**
+- Replace the commit verb (English: `commit`; Chinese: `提交` / `送出`) in ARGUMENTS with `commit '<auto_message>'`.
+- Keep any trailing flags (e.g. `and push`, `並推送`) intact.
+- Examples:
+  - `commit and push` → `commit 'feat: add login endpoint' and push`
+  - `提交並推送` → `commit 'feat: add login endpoint' and push`
+  - `送出` → `commit 'chore: minor cleanup'`
 
-For example:
-- Original: `commit 'fix null pointer' and push`
-- Enriched: `commit 'fix null pointer' and push root cause: login handler dereferences pointer without null check`
+**If message already provided** and it is a **fix** commit with root_cause identified, append root cause:
+- Example: `commit 'fix null pointer' and push` → `commit 'fix null pointer' and push root cause: login handler dereferences pointer without null check`
 
-Save the enriched text as `ENRICHED_ARGS`. For non-fix commits use original `$ARGUMENTS`.
+Save the resulting text as `ENRICHED_ARGS`.
 
 ## Step 2 — Generate the bash script (print mode)
 

@@ -58,6 +58,7 @@ class Plan:
     commits: List[str] = field(default_factory=list)
     commit_range: Optional[str] = None
     no_commit: bool = False
+    combined: bool = False  # Revert multiple commits and squash into one commit
 
     # Branch
     branch_name: Optional[str] = None
@@ -682,9 +683,14 @@ def parse_hashes(text: str) -> List[str]:
 
 
 def parse_quoted_string(text: str) -> Optional[str]:
+    # Double quotes and Unicode curly quotes
     m = re.search(r'"([^"]*)"|[\u201c]([^\u201d]*)[\u201d]', text)
     if m:
         return m.group(1) if m.group(1) is not None else m.group(2)
+    # Single quotes (fallback)
+    m = re.search(r"'([^']+)'", text)
+    if m:
+        return m.group(1)
     return None
 
 
@@ -692,6 +698,21 @@ def parse_quoted_string(text: str) -> Optional[str]:
 def parse_operation_from_text(text: str, llm_config: Optional[Dict[str, Any]] = None) -> Plan:
     t = text.strip()
     tl = t.lower()
+
+    # Early return: "commit '<message>'" — the commit message may contain any keyword
+    # (pull, revert, push, merge, etc.) that would otherwise trigger the wrong NLP block.
+    # Detect immediately so later blocks never see these keywords.
+    if re.search(r"^commit\s+['\"]", tl):
+        msg = parse_quoted_string(t)
+        push_mode = "push" if re.search(r"\bpush\b", tl[tl.rfind("'") + 1:] if "'" in tl else tl[tl.rfind('"') + 1:]) else "nopush"
+        amend = bool(re.search(r"\bamend\b", tl))
+        root_cause = None
+        rc_m = re.search(r"root\s*cause\s*[:：]\s*[\"']?(.+?)[\"']?\s*$", t, re.IGNORECASE)
+        if not rc_m:
+            rc_m = re.search(r"原因\s*[:：]\s*[\"']?(.+?)[\"']?\s*$", t, re.IGNORECASE)
+        if rc_m:
+            root_cause = rc_m.group(1).strip().strip("\"'")
+        return Plan(op="commit", message=msg, push_mode=push_mode, amend=amend, root_cause=root_cause)
 
     # More specific intents should come first.
 
@@ -965,7 +986,9 @@ def parse_operation_from_text(text: str, llm_config: Optional[Dict[str, Any]] = 
         )
 
     # NLP for 'cherry-pick'
-    if re.search(r"\bcherry[- ]?pick\b", tl):
+    # Guard: skip if the cherry-pick keyword appears inside a quoted commit message
+    # e.g. commit 'cherry-pick abc123' — match only when cherry-pick is the leading verb
+    if re.search(r"\bcherry[- ]?pick\b", tl) and not re.search(r"""^commit\s+['"][^'"]*cherry""", tl):
         no_commit = bool(re.search(r"\bno[- ]commit\b|\bwithout commit\b", tl))
         push_mode = "push" if re.search(r"\bpush\b", tl) else "nopush"
         # Range syntax: abc123^..def456 or abc123..def456
@@ -987,7 +1010,8 @@ def parse_operation_from_text(text: str, llm_config: Optional[Dict[str, Any]] = 
         )
 
     # NLP for 'pull' / '拉取'
-    if re.search(r"\bpull\b", tl) or re.search(r"拉取", t):
+    # Guard: skip if keyword appears inside a quoted commit message (e.g. commit 'fix pull bug')
+    if (re.search(r"\bpull\b", tl) or re.search(r"拉取", t)) and not re.search(r"""^commit\s+['"][^'"]*pull""", tl):
         pull_mode = "merge" if re.search(r"--merge|--no-rebase|用\s*merge", tl) else "rebase"
         pull_force = bool(re.search(r"\bforce\b|--force|強制|覆蓋本地|discard.*local|local.*discard", tl))
         # Extract branch: "pull main", "pull from main", "pull feature/abc", "拉取 main"
@@ -1083,8 +1107,9 @@ def parse_operation_from_text(text: str, llm_config: Optional[Dict[str, Any]] = 
         )
 
     # NLP for 'rebase' (including 'squash')
+    # Guard: skip if 'revert' is present — squash there means combined revert, not rebase
     if re.search(r"\b(rebase|squash|合併)\b", tl) and not re.search(
-        r"\bsync[- ]?mode\b", tl
+        r"\bsync[- ]?mode\b|\brevert\b", tl
     ):
         interactive = bool(re.search(r"\binteractive(ly)?\b|-i\b", tl))
 
@@ -1135,9 +1160,14 @@ def parse_operation_from_text(text: str, llm_config: Optional[Dict[str, Any]] = 
     if re.search(r"\brevert\b", tl):
         hashes = parse_hashes(t)
         no_commit = bool(re.search(r"\bno-commit\b|\bwithout commit\b", tl))
+        combined = bool(re.search(
+            r"\bcombined?\b|\bas one\b|\binto one\b|合成一個|合為一個|合成一筆",
+            tl,
+        ) or re.search(r"\bsquash\s+(?:into\s+)?one\b|\bsquash\s+revert\b", tl))
         push_mode = "push" if re.search(r"\bpush\b", tl) else "nopush"
         return Plan(
-            op="revert", commits=hashes, no_commit=no_commit, push_mode=push_mode
+            op="revert", commits=hashes, no_commit=no_commit,
+            combined=combined, push_mode=push_mode
         )
 
     # NLP for 'branch'
@@ -1532,17 +1562,22 @@ def render(plan: Plan) -> str:
             pull_cmd += f" $REMOTE {q(plan.pull_branch)}"
         if plan.pull_force:
             out.append(
-                f"if ! {pull_cmd}; then\n"
-                "  CONFLICT_FILES=$(git diff --name-only)\n"
-                "  if [ -n \"$CONFLICT_FILES\" ]; then\n"
-                "    echo \"[git-ops] Discarding local changes in:\"\n"
-                "    echo \"$CONFLICT_FILES\"\n"
-                "    git restore $CONFLICT_FILES\n"
-                f"    {pull_cmd}\n"
-                "  else\n"
-                "    echo \"Pull failed (not a local-changes conflict).\"; exit 1\n"
+                # Detect tracked modifications (staged + unstaged); exclude untracked (??) and ignored (!!)
+                "DIRTY_TRACKED=$(git status --porcelain | grep -E '^[MADRCTU][[:space:]]|^[[:space:]][MADRCTU]' || true)\n"
+                # Detect untracked files separately
+                "DIRTY_UNTRACKED=$(git status --porcelain | grep -E '^\\?\\?' || true)\n"
+                "if [ -n \"$DIRTY_TRACKED\" ] || [ -n \"$DIRTY_UNTRACKED\" ]; then\n"
+                "  echo \"[git-ops] Local changes detected:\"\n"
+                "  git status --short\n"
+                "  echo \"\"\n"
+                "  confirm_yes \"Discard ALL local changes above (including untracked files) and pull latest?\"\n"
+                "  git reset --hard HEAD\n"
+                "  if [ -n \"$DIRTY_UNTRACKED\" ]; then\n"
+                "    git clean -fd\n"
                 "  fi\n"
+                "  echo \"[git-ops] Local changes discarded.\"\n"
                 "fi\n"
+                f"{pull_cmd}\n"
             )
         else:
             out.append(pull_cmd + "\n")
@@ -1551,6 +1586,84 @@ def render(plan: Plan) -> str:
     elif plan.op == "revert":
         if not plan.commits:
             out.append("echo 'No commit hashes provided to revert.'; exit 1\n")
+        elif plan.combined:
+            # Combined mode: revert multiple commits and squash into one commit
+            # Note: no_commit is ignored in combined mode — a commit is always made at the end
+            if plan.no_commit:
+                out.append('echo "[git-ops] Note: --no-commit is ignored in --combined mode (commit is always made at the end)."\n')
+            commits_str = " ".join(q(c) for c in plan.commits)
+            default_title = "Revert: " + " ".join(plan.commits)
+            # Build per-commit subject list as bash snippet
+            hash_list = " ".join(q(c) for c in plan.commits)
+            out.append(f"git revert --no-commit {commits_str} || {{\n")
+            out.append(
+                '  echo "Revert conflict. Resolve conflicts, stage them, then run: git commit";\n'
+            )
+            out.append("  exit 1;\n}\n")
+            # Title: use provided message or prompt with default suggestion
+            if plan.message:
+                title_block = f"COMMIT_TITLE={q(plan.message)}\n"
+            else:
+                title_block = (
+                    f"DEFAULT_TITLE={q(default_title)}\n"
+                    f'echo "Commit title [press Enter to use default]:"\n'
+                    f'echo "  $DEFAULT_TITLE"\n'
+                    f'read -r -p "> " COMMIT_TITLE\n'
+                    f'[ -z "$COMMIT_TITLE" ] && COMMIT_TITLE="$DEFAULT_TITLE"\n'
+                )
+
+            # Root cause: use provided value or prompt interactively
+            if plan.root_cause:
+                rc_escaped = plan.root_cause.replace("'", "'\\''")
+                root_cause_block = f"ROOT_CAUSE_INPUT='{rc_escaped}'\n"
+            else:
+                root_cause_block = (
+                    'echo ""\n'
+                    'read -r -p "Root cause (optional, Enter to skip): " ROOT_CAUSE_INPUT\n'
+                )
+
+            out.append(f"""
+# --- Combined revert commit ---
+{title_block}
+# Auto-list reverted commits with subjects
+REVERT_LIST=""
+for HASH in {hash_list}; do
+  SUBJECT=$(git log -1 --format="%h %s" "$HASH" 2>/dev/null || echo "$HASH")
+  REVERT_LIST="${{REVERT_LIST}}- ${{SUBJECT}}
+"
+done
+
+# Diff stat
+DIFF_STAT=$(git diff --cached --stat 2>/dev/null || true)
+
+# Root cause
+{root_cause_block}
+# Compose full commit message via temp file
+COMMIT_MSG_FILE=$(mktemp)
+trap 'rm -f "$COMMIT_MSG_FILE"' EXIT
+{{
+  echo "$COMMIT_TITLE"
+  echo ""
+  echo "Reverts the following commits:"
+  printf "%s" "$REVERT_LIST"
+  if [ -n "$DIFF_STAT" ]; then
+    echo ""
+    echo "## Modified Files"
+    echo "$DIFF_STAT"
+  fi
+  if [ -n "$ROOT_CAUSE_INPUT" ]; then
+    echo ""
+    echo "## Root Cause"
+    echo "$ROOT_CAUSE_INPUT"
+  fi
+}} > "$COMMIT_MSG_FILE"
+git commit -F "$COMMIT_MSG_FILE"
+rm -f "$COMMIT_MSG_FILE"
+""")
+
+            if plan.push_mode != "nopush":
+                out.append(sync_block(plan.sync_mode))
+                maybe_push_with_upstream()
         else:
             flag = "--no-commit" if plan.no_commit else ""
             out.append(
@@ -2128,6 +2241,22 @@ def main() -> None:
         "--no-commit",
         action="store_true",
         help="Apply the revert changes to the working tree but do not commit.",
+    )
+    p_revert.add_argument(
+        "--combined",
+        action="store_true",
+        help="Revert multiple commits and squash them into a single commit.",
+    )
+    p_revert.add_argument(
+        "-m",
+        "--message",
+        dest="message",
+        help="Commit title for combined revert (skips interactive prompt).",
+    )
+    p_revert.add_argument(
+        "--root-cause",
+        dest="root_cause",
+        help="Root cause description for combined revert (skips interactive prompt).",
     )
     p_revert.add_argument(
         "--push",

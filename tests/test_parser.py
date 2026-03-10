@@ -335,6 +335,51 @@ class TestParseMergeRebaseEtc:
         assert p.op == "revert"
         assert "abc123" in p.commits
 
+    def test_revert_no_commit(self):
+        p = parse_operation_from_text("revert abc123 without commit")
+        assert p.op == "revert"
+        assert p.no_commit is True
+        assert p.combined is False
+
+    def test_revert_combined_english(self):
+        p = parse_operation_from_text("revert abc123 def456 combined")
+        assert p.op == "revert"
+        assert p.combined is True
+        assert "abc123" in p.commits
+        assert "def456" in p.commits
+
+    def test_revert_combined_as_one(self):
+        p = parse_operation_from_text("revert abc123 def456 as one commit")
+        assert p.op == "revert"
+        assert p.combined is True
+
+    def test_revert_combined_chinese(self):
+        p = parse_operation_from_text("revert abc123 def456 合成一筆")
+        assert p.op == "revert"
+        assert p.combined is True
+
+    def test_revert_combined_and_push(self):
+        p = parse_operation_from_text("revert abc123 def456 combined and push")
+        assert p.op == "revert"
+        assert p.combined is True
+        assert p.push_mode == "push"
+
+    def test_revert_combined_into_one(self):
+        p = parse_operation_from_text("revert abc123 def456 into one")
+        assert p.op == "revert"
+        assert p.combined is True
+
+    def test_revert_combined_squash_into_one(self):
+        p = parse_operation_from_text("revert abc123 def456 squash into one")
+        assert p.op == "revert"
+        assert p.combined is True
+
+    def test_revert_squash_alone_does_not_set_combined(self):
+        # bare "squash" alone does not match the combined regex (requires "squash into one" or "squash revert")
+        p = parse_operation_from_text("revert abc123 squash")
+        assert p.op == "revert"
+        assert p.combined is False
+
 
 # ── parse_operation_from_text: show / diff / log / blame / reflog ───
 
@@ -641,6 +686,17 @@ class TestParseChinese:
 
 
 class TestParseEdgeCases:
+    def test_commit_single_quoted_message(self):
+        p = parse_operation_from_text("commit 'fix auth bug' and push")
+        assert p.op == "commit"
+        assert p.message == "fix auth bug"
+        assert p.push_mode == "push"
+
+    def test_commit_double_quoted_message(self):
+        p = parse_operation_from_text('commit "fix auth bug" and push')
+        assert p.op == "commit"
+        assert p.message == "fix auth bug"
+
     def test_empty_string_returns_status(self):
         p = parse_operation_from_text("")
         assert p.op == "status"
