@@ -66,6 +66,8 @@ gops "stash my changes" | bash
 - 📦 **進階 Stash 管理** - 詳細列表、備份匯出、安全套用
 - 🔄 **工作流模板** - 多步驟自動化（create-feature、commit-and-push）
 - ⚠️ **衝突偵測** - 合併前預先偵測潛在衝突
+- 🔀 **Combined Revert** - 多 commit 還原合為一筆提交
+- 🪄 **Skill 自動 Commit Message** - 說 "commit and push" 即自動分析 diff 產生訊息
 
 ---
 
@@ -135,6 +137,17 @@ gops "workflow commit-and-push" -x
 gops "validate commit message 'feat: new login'" -x -y
 ```
 
+### Combined Revert（多 Commit 合併還原）
+
+```bash
+# 還原多個 commit 並合為一筆提交
+gops "revert abc123 def456 combined" -x
+gops "revert abc123 def456 into one" -x
+gops "revert abc123 def456 合成一筆" -x
+```
+
+還原時會自動列出每個被還原的 commit 主旨，產生結構化的還原記錄。
+
 ### 中文支援
 
 ```bash
@@ -182,13 +195,13 @@ $ gops "log graph all" -x -y
 
 ---
 
-## 📋 支援的操作（24 個）
+## 📋 支援的操作（25 個）
 
 ### 高頻操作
 ✅ stash, commit, checkout, pull, push, grep
 
 ### 一般操作
-✅ reset, restore, merge, log, diff, clean
+✅ reset, restore, merge, revert, log, diff, clean
 
 ### 專業操作
 ✅ show, blame, tag, rebase, cherry-pick, bisect, reflog
@@ -339,7 +352,7 @@ python3 scripts/pattern_analyzer.py --suggest-aliases
 ./test_usage_tracking.sh
 ```
 
-**測試覆蓋率：100% (21/21 tests passing)** ✅
+**測試覆蓋率：100% (133/133 tests passing)** ✅
 
 ---
 
@@ -419,8 +432,11 @@ pip install -r requirements.txt
 
 🟢 **PRODUCTION READY - 生產就緒**
 
-- ✅ 24 個操作支援（17 基本 + 7 智能功能）
+- ✅ 25 個操作支援（18 基本 + 7 智能功能）
 - ✅ 內建執行器（`-x` 直接執行）
+- ✅ Skill 自動 Commit Message（分析 diff 產生）
+- ✅ Combined Revert 模式
+- ✅ Pull --force 安全處理 untracked files
 - ✅ 完整文檔
 - ✅ 生產級品質
 
@@ -466,5 +482,5 @@ MIT License - 隨意使用！
 
 ---
 
-*Last Updated: 2026-02-27*
-*Version: 2.1.0 - LLM Fallback + Built-in Executor + Smart Features*
+*Last Updated: 2026-03-10*
+*Version: 2.2.0 - Combined Revert + Pull Force Fix + Auto Commit Message + NLP Improvements*
