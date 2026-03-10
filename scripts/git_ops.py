@@ -304,7 +304,8 @@ git merge "$REMOTE/$BR" || {
   echo "Or abort:"
   echo "  git merge --abort"
   exit 1
-}"""
+}
+"""
     return r"""echo "[git-ops] sync_mode=rebase"
 git fetch "$REMOTE"
 git rebase "$REMOTE/$BR" || {
@@ -317,7 +318,8 @@ git rebase "$REMOTE/$BR" || {
   echo "Or abort:"
   echo "  git rebase --abort"
   exit 1
-}"""
+}
+"""
 
 
 def push_block(push_mode: str) -> str:
